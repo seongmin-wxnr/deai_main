@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import BaseUserInformation_data, UserPreferGame, Post_Community  # ← Post_ 추가
+from .models import BaseUserInformation_data, UserPreferGame, Post_Community, PostParticipant , Friendship 
 
 @admin.register(BaseUserInformation_data)
 class UserAdmin(admin.ModelAdmin):
@@ -21,3 +21,11 @@ class PostAdmin(admin.ModelAdmin):
     search_fields = ('user__username', 'post_title')
     list_filter   = ('game_id', 'is_open')
     ordering      = ('-post_upload_at',)
+
+@admin.register(PostParticipant)
+class PostParticipantAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user', 'post', 'joined_at')
+
+@admin.register(Friendship)
+class PostParticipantAdmin(admin.ModelAdmin):
+    list_display = ('STATUS_CHOICES', 'from_user', 'status', 'created_at')
