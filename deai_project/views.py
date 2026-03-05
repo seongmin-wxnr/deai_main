@@ -4,7 +4,7 @@ from django.contrib.auth.hashers import make_password, check_password
 from django.db.models import Q
 
 ## 데이터베이스 관ㄹ리
-from .models import BaseUserInformation_data, UserPreferGame, Post_Community, PostParticipant, Friendship
+from .models import BaseUserInformation_data, UserPreferGame, Post_Community, PostParticipant, Friendship , ChatMessage , Notification, JoinRequest, DirectMessage
 from datetime import datetime
 import json
 
@@ -374,6 +374,14 @@ def api_post_list(request):
                 post=p, user_id=user_id
             ).exists() if user_id else False
 
+            joined_by_me = PostParticipant.objects.filter(
+                post=p, user_id=user_id
+            ).exists() if user_id else False
+
+            pending_by_me = JoinRequest.objects.filter(
+            post=p, user_id=user_id, status='pending'
+            ).exists() if user_id else False
+
             result.append({
                 'id'             : p.id,
                 'game_id'        : p.game_id,
@@ -392,6 +400,11 @@ def api_post_list(request):
                 # 참여 여부
                 'joined_by_me'   : joined_by_me,
                 'already_in_party': already_in_party,
+
+                ## request nonfictin
+                'joined_by_me'    : joined_by_me,
+                'already_in_party': already_in_party,
+                'pending_by_me'   : pending_by_me,
             })
         print("Data read at -> post_")
         return JsonResponse({'success': True, 'posts': result})
@@ -645,3 +658,324 @@ def api_friend_delete(request, friendship_id):
         return JsonResponse({'success': True})
     except Friendship.DoesNotExist:
         return JsonResponse({'success': False}, status=404)
+
+def api_post_members(request, post_id):
+    if request.method != 'GET':
+        return JsonResponse({'success': False}, status=405)
+    try:
+        post = Post_Community.objects.get(id=post_id)
+
+        # 방장 (게시글 작성자) 먼저
+        host_game = UserPreferGame.objects.filter(
+            user=post.user, game_id=post.game_id
+        ).first()
+
+        members = [{
+            'username': post.user.username,
+            'name_tag': host_game.name_tag if host_game else '',
+            'is_host' : True,
+        }]
+
+        # 참여자 목록
+        participants = PostParticipant.objects.filter(
+            post=post
+        ).select_related('user')
+
+        for p in participants:
+            game_info = UserPreferGame.objects.filter(
+                user=p.user, game_id=post.game_id
+            ).first()
+            members.append({
+                'username': p.user.username,
+                'name_tag': game_info.name_tag if game_info else '',
+                'is_host' : False,
+            })
+
+        return JsonResponse({'success': True, 'members': members})
+
+    except Post_Community.DoesNotExist:
+        return JsonResponse({'success': False, 'message': '게시글을 찾을 수 없습니다.'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+def api_post_members(request, post_id):
+    if request.method != 'GET':
+        return JsonResponse({'success': False}, status=405)
+    try:
+        post = Post_Community.objects.get(id=post_id)
+        host_game = UserPreferGame.objects.filter(user=post.user, game_id=post.game_id).first()
+        members = [{
+            'username': post.user.username,
+            'name_tag': host_game.name_tag if host_game else '',
+            'is_host' : True,
+        }]
+        for p in PostParticipant.objects.filter(post=post).select_related('user'):
+            g = UserPreferGame.objects.filter(user=p.user, game_id=post.game_id).first()
+            members.append({
+                'username': p.user.username,
+                'name_tag': g.name_tag if g else '',
+                'is_host' : False,
+            })
+        return JsonResponse({'success': True, 'members': members})
+    except Post_Community.DoesNotExist:
+        return JsonResponse({'success': False}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+def api_user_profile(request, username):
+    if request.method != 'GET':
+        return JsonResponse({'success': False}, status=405)
+    try:
+        GAME_META = {
+            'lol' : {'name': '리그오브레전드', 'icon': '⚔️',  'score_label': 'LP'},
+            'val' : {'name': '발로란트',       'icon': '🔫',  'score_label': 'RR'},
+            'ow'  : {'name': '오버워치 2',     'icon': '🦸',  'score_label': '점수'},
+            'fifa': {'name': '피파온라인 4',   'icon': '⚽',  'score_label': '점수'},
+            'gs'  : {'name': '원신',           'icon': '🌿',  'score_label': '점수'},
+        }
+        user = BaseUserInformation_data.objects.get(username=username)
+        games_qs = UserPreferGame.objects.filter(user=user)
+        games = []
+        for g in games_qs:
+            meta = GAME_META.get(g.game_id, {'name': g.game_id, 'icon': '🎮', 'score_label': '점수'})
+            games.append({
+                'game_id'    : g.game_id,
+                'name'       : meta['name'],
+                'icon'       : meta['icon'],
+                'score_label': meta['score_label'],
+                'name_tag'   : g.name_tag,
+                'tier'       : g.tier,
+                'sub_info'   : g.sub_info,
+                'score'      : g.score_current,
+                'score_best' : g.score_best,
+            })
+        return JsonResponse({'success': True, 'username': username, 'games': games})
+    except BaseUserInformation_data.DoesNotExist:
+        return JsonResponse({'success': False, 'message': '유저를 찾을 수 없습니다.'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
+    
+def api_chat_history(request, post_id):
+    if request.method != 'GET':
+        return JsonResponse({'success': False}, status=405)
+    try:
+        messages = ChatMessage.objects.filter(
+            post_id=post_id
+        ).select_related('user').order_by('sent_at')
+
+        def time_fmt(dt):
+            from django.utils import timezone
+            local = dt.astimezone(timezone.get_current_timezone())
+            return local.strftime('%H:%M')
+
+        result = [
+            {
+                'username': m.user.username,
+                'message' : m.message,
+                'time'    : time_fmt(m.sent_at),
+            }
+            for m in messages
+        ]
+        return JsonResponse({'success': True, 'messages': result})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
+    
+def api_post_join(request, post_id):
+    if request.method != 'POST':
+        return JsonResponse({'success': False}, status=405)
+    if not request.session.get('user_id'):
+        return JsonResponse({'success': False, 'message': '로그인이 필요합니다.'}, status=401)
+    try:
+        user = BaseUserInformation_data.objects.get(id=request.session['user_id'])
+        post = Post_Community.objects.get(id=post_id)
+
+        if post.user.id == user.id:
+            return JsonResponse({'success': False, 'message': '본인 글에는 참여할 수 없습니다.'}, status=400)
+        if not post.is_open:
+            return JsonResponse({'success': False, 'message': '이미 모집이 완료된 글입니다.'}, status=400)
+
+        # 현재 실제로 참여 중인지만 체크 (탈퇴했으면 통과)
+        if PostParticipant.objects.filter(post=post, user=user).exists():
+            return JsonResponse({'success': False, 'message': '이미 참여한 게시글입니다.'}, status=400)
+
+        # 다른 파티 참여 중
+        if PostParticipant.objects.filter(user=user, post__is_open=True).exists():
+            return JsonResponse({'success': False, 'message': '이미 다른 파티에 참여 중입니다.'}, status=400)
+
+        # 기존 JoinRequest 처리
+        existing = JoinRequest.objects.filter(post=post, user=user).first()
+
+        if existing:
+            if existing.status == 'pending':
+                return JsonResponse({'success': False, 'message': '이미 가입 신청 중입니다.'}, status=400)
+            else:
+                # rejected 또는 accepted 후 탈퇴
+                existing.status = 'pending'
+                existing.save()
+                join_req = existing
+
+                # 버그2 수정: 이전 알림 중 pending 상태인 것만 남기고
+                # 기존 join_request 알림을 삭제하고 새로 생성
+                Notification.objects.filter(
+                    related_join_request=join_req,
+                    type='join_request'
+                ).delete()
+        else:
+            join_req = JoinRequest.objects.create(post=post, user=user, status='pending')
+
+        # 게시글 주인에게 알림 생성
+        Notification.objects.create(
+            user    = post.user,
+            type    = 'join_request',
+            message = f'{user.username}님이 [{post.post_title}] 파티에 가입 신청했어요.',
+            related_join_request = join_req,
+        )
+
+        return JsonResponse({'success': True, 'status': 'pending'})
+
+    except Post_Community.DoesNotExist:
+        return JsonResponse({'success': False, 'message': '게시글을 찾을 수 없습니다.'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+def api_join_respond(request):
+    if request.method != 'POST':
+        return JsonResponse({'success': False}, status=405)
+    if not request.session.get('user_id'):
+        return JsonResponse({'success': False}, status=401)
+    try:
+        data      = json.loads(request.body)
+        req_id    = data.get('request_id')
+        action    = data.get('action')  # 'accept' or 'reject'
+        user_id   = request.session['user_id']
+
+        join_req  = JoinRequest.objects.select_related('post', 'user').get(id=req_id)
+
+        # 게시글 주인만 처리 가능
+        if join_req.post.user.id != user_id:
+            return JsonResponse({'success': False, 'message': '권한이 없습니다.'}, status=403)
+
+        if action == 'accept':
+            join_req.status = 'accepted'
+            join_req.save()
+
+            # 실제 파티 참여 처리
+            PostParticipant.objects.get_or_create(post=join_req.post, user=join_req.user)
+            join_req.post.current_member += 1
+            if join_req.post.current_member >= join_req.post.total_member:
+                join_req.post.is_open = False
+            join_req.post.save()
+
+            Notification.objects.create(
+                user    = join_req.user,
+                type    = 'join_accept',
+                message = f'[{join_req.post.post_title}] 파티 가입이 수락되었습니다! 🎉',
+                related_join_request = join_req,
+            )
+            return JsonResponse({'success': True, 'action': 'accept'})
+
+        elif action == 'reject':
+            join_req.status = 'rejected'
+            join_req.save()
+
+            Notification.objects.create(
+                user    = join_req.user,
+                type    = 'join_reject',
+                message = f'[{join_req.post.post_title}] 파티 가입이 거절되었습니다.',
+                related_join_request = join_req,
+            )
+            return JsonResponse({'success': True, 'action': 'reject'})
+
+        return JsonResponse({'success': False, 'message': '잘못된 동작'}, status=400)
+
+    except JoinRequest.DoesNotExist:
+        return JsonResponse({'success': False, 'message': '신청을 찾을 수 없습니다.'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
+    
+def api_notifications_read(request):
+    if request.method != 'POST':
+        return JsonResponse({'success': False}, status=405)
+    if not request.session.get('user_id'):
+        return JsonResponse({'success': False}, status=401)
+    Notification.objects.filter(user_id=request.session['user_id'], is_read=False).update(is_read=True)
+    return JsonResponse({'success': True})
+
+def api_notifications(request):
+    if not request.session.get('user_id'):
+        return JsonResponse({'success': False}, status=401)
+
+    notifs = Notification.objects.filter(
+        user_id=request.session['user_id']
+    ).select_related('related_join_request').order_by('-created_at')[:30]
+
+    result = []
+    for n in notifs:
+        item = {
+            'id'        : n.id,
+            'type'      : n.type,
+            'message'   : n.message,
+            'is_read'   : n.is_read,
+            'created_at': n.created_at.strftime('%m/%d %H:%M'),
+            'request_id': n.related_join_request.id if n.related_join_request else None,
+            'request_status': n.related_join_request.status if n.related_join_request else None,
+        }
+        result.append(item)
+
+    unread = Notification.objects.filter(user_id=request.session['user_id'], is_read=False).count()
+    return JsonResponse({'success': True, 'notifications': result, 'unread': unread})
+
+def api_dm_send(request):
+    if request.method != 'POST':
+        return JsonResponse({'success': False}, status=405)
+    if not request.session.get('user_id'):
+        return JsonResponse({'success': False}, status=401)
+    try:
+        data     = json.loads(request.body)
+        to_name  = data.get('to_username', '').strip()
+        message  = data.get('message', '').strip()
+        if not message:
+            return JsonResponse({'success': False, 'message': '메시지를 입력해주세요.'})
+        sender   = BaseUserInformation_data.objects.get(id=request.session['user_id'])
+        receiver = BaseUserInformation_data.objects.get(username=to_name)
+        DirectMessage.objects.create(sender=sender, receiver=receiver, message=message)
+        return JsonResponse({'success': True})
+    except BaseUserInformation_data.DoesNotExist:
+        return JsonResponse({'success': False, 'message': '유저를 찾을 수 없습니다.'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+
+def api_dm_history(request, username):
+    if request.method != 'GET':
+        return JsonResponse({'success': False}, status=405)
+    if not request.session.get('user_id'):
+        return JsonResponse({'success': False}, status=401)
+    try:
+        from django.db.models import Q
+        from django.utils import timezone
+        me    = BaseUserInformation_data.objects.get(id=request.session['user_id'])
+        other = BaseUserInformation_data.objects.get(username=username)
+        msgs  = DirectMessage.objects.filter(
+            Q(sender=me, receiver=other) | Q(sender=other, receiver=me)
+        ).order_by('sent_at')
+
+        def fmt(dt):
+            local = dt.astimezone(timezone.get_current_timezone())
+            return local.strftime('%H:%M')
+
+        result = [{'username': m.sender.username, 'message': m.message, 'time': fmt(m.sent_at)} for m in msgs]
+        return JsonResponse({'success': True, 'messages': result})
+    except BaseUserInformation_data.DoesNotExist:
+        return JsonResponse({'success': False}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+def api_notifications_clear(request):
+    if request.method != 'POST':
+        return JsonResponse({'success': False}, status=405)
+    if not request.session.get('user_id'):
+        return JsonResponse({'success': False}, status=401)
+    user = BaseUserInformation_data.objects.get(id=request.session['user_id'])
+    Notification.objects.filter(user=user).delete()
+    return JsonResponse({'success': True})
