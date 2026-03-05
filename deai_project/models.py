@@ -132,3 +132,77 @@ class Friendship(models.Model):
 
     def __str__(self):
         return f'{self.from_user.username} → {self.to_user.username} ({self.status})'
+    
+class ChatMessage(models.Model):
+    post    = models.ForeignKey(
+        Post_Community,
+        on_delete=models.CASCADE, # 게시글 삭제 시 채팅 내역도 삭제
+        related_name='messages'
+    )
+    user     = models.ForeignKey(
+        BaseUserInformation_data,
+        on_delete=models.CASCADE,
+        related_name='chat_messages'
+    )
+    message  = models.TextField()
+    sent_at  = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table  = 'chat_message'
+        ordering  = ['sent_at']
+
+    def __str__(self):
+        return f'[{self.post_id}] {self.user.username}: {self.message[:20]}'
+
+class JoinRequest(models.Model):
+    STATUS_CHOICES = [
+        ('pending',  '대기 중'),
+        ('accepted', '수락됨'),
+        ('rejected', '거절됨'),
+    ]
+    post       = models.ForeignKey(Post_Community, on_delete=models.CASCADE, related_name='join_requests')
+    user       = models.ForeignKey(BaseUserInformation_data, on_delete=models.CASCADE, related_name='join_requests')
+    status     = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table       = 'join_request'
+        unique_together = ('post', 'user')
+
+    def __str__(self):
+        return f'{self.user.username} → {self.post.post_title} ({self.status})'
+    
+class Notification(models.Model):
+    TYPE_CHOICES = [
+        ('join_request', '가입 요청'),
+        ('join_accept',  '가입 수락'),
+        ('join_reject',  '가입 거절'),
+    ]
+    user       = models.ForeignKey(BaseUserInformation_data, on_delete=models.CASCADE, related_name='notifications')
+    type       = models.CharField(max_length=20, choices=TYPE_CHOICES)
+    message    = models.CharField(max_length=200)
+    is_read    = models.BooleanField(default=False)
+    related_join_request = models.ForeignKey(
+        JoinRequest, on_delete=models.CASCADE, null=True, blank=True, related_name='notifications'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'notification'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.user.username} - {self.type}'
+
+class DirectMessage(models.Model):
+    sender   = models.ForeignKey(BaseUserInformation_data, on_delete=models.CASCADE, related_name='sent_dms')
+    receiver = models.ForeignKey(BaseUserInformation_data, on_delete=models.CASCADE, related_name='received_dms')
+    message  = models.TextField()
+    sent_at  = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'direct_message'
+        ordering = ['sent_at']
+
+    def __str__(self):
+        return f'{self.sender.username} → {self.receiver.username}: {self.message[:20]}'
