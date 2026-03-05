@@ -94,7 +94,7 @@
     </div>
   </div>
 
-  <!-- ── 프로필 모달 ── -->
+  <!-- 프로필 모달 -->
   <div class="modal-overlay" id="profile-modal" onclick="handleProfileOverlayClick(event)">
     <div class="modal-card" style="max-width:480px">
       <div class="detail-game-header" style="background:rgba(201,168,76,0.1);border-color:rgba(201,168,76,0.3);margin-bottom:20px">
@@ -124,7 +124,7 @@
     </div>
   </div>
 
-  <!-- ── 타 유저 프로필 모달 ── -->
+  <!-- 타 유저 프로필 모달 -->
   <div class="modal-overlay" id="user-profile-modal" onclick="handleUserProfileOverlayClick(event)">
     <div class="modal-card" style="max-width:460px">
       <div class="detail-game-header" id="upm-header" style="background:rgba(201,168,76,0.1);border-color:rgba(201,168,76,0.3);margin-bottom:20px">
@@ -142,7 +142,7 @@
     </div>
   </div>
 
-  <!-- ── 친구 모달 ── -->
+  <!-- 친구 모달 -->
   <div class="modal-overlay" id="friend-modal" onclick="handleFriendOverlayClick(event)">
     <div class="modal-card" style="max-width:460px">
       <div class="detail-game-header" style="background:rgba(201,168,76,0.1);border-color:rgba(201,168,76,0.3);margin-bottom:20px">
@@ -173,7 +173,7 @@
     </div>
   </div>
 
-  <!-- ── 알림 모달 ── -->
+  <!-- 알림 모달 -->
   <div class="modal-overlay" id="notif-modal" onclick="handleNotifOverlayClick(event)">
     <div class="modal-card" style="max-width:420px">
       <div class="detail-game-header" style="background:rgba(201,168,76,0.1);border-color:rgba(201,168,76,0.3);margin-bottom:20px">
@@ -192,7 +192,7 @@
     </div>
   </div>
 
-  <!-- ── 친구 프로필 모달 ── -->
+  <!-- 친구 프로필 모달 -->
   <div class="modal-overlay" id="friend-profile-modal" onclick="handleFriendProfileOverlayClick(event)" style="z-index:999">
     <div class="modal-card" style="max-width:460px">
       <div class="detail-game-header" style="background:rgba(201,168,76,0.1);border-color:rgba(201,168,76,0.3);margin-bottom:20px">
@@ -209,7 +209,7 @@
     </div>
   </div>
 
-  <!-- ── DM 채팅 모달 ── -->
+  <!-- DM 채팅 모달 -->
   <div class="modal-overlay" id="dm-modal" onclick="handleDMOverlayClick(event)" style="z-index:999">
     <div class="chat-modal-card">
       <div class="chat-header">
@@ -243,7 +243,7 @@
   <link rel="stylesheet" href="{% static 'css/common.css' %}">
   <link rel="stylesheet" href="{% static 'css/Main.css' %}">
   <style>
-    /* ── 티어 배지 메타 태그 ── */
+
     .tier-meta-tag {
       display: inline-block;
       font-size: 11px;
@@ -256,7 +256,6 @@
       white-space: nowrap;
     }
 
-    /* ── 프로필 게임 태그 (상세) ── */
     .profile-game-tag {
       background: rgba(255,255,255,0.03);
       border: 1px solid rgba(255,255,255,0.07);
@@ -293,7 +292,6 @@
       font-family: 'JetBrains Mono', monospace;
     }
 
-    /* ── 게시글 상세 모달 ── */
     .detail-game-header {
       display: flex; align-items: center; gap: 10px;
       padding: 10px 14px; border-radius: 10px;
@@ -347,10 +345,6 @@
     }
     .post-card { cursor: pointer; }
     .post-card:active { transform: scale(0.99); }
-
-    /* ════════════════════════════════
-       채팅 모달
-    ════════════════════════════════ */
     .chat-modal-card {
       background: var(--card);
       border: 1px solid var(--border);
@@ -475,7 +469,6 @@
     }
     .chat-send-btn:hover { opacity: 0.85; }
 
-    /* ── 삭제 버튼 ── */
     .post-card-wrap {
       position: relative;
     }
@@ -501,7 +494,6 @@
       border-color: rgba(239,68,68,0.4);
     }
 
-    /* ── 참여하기 버튼 ── */
     .btn-join {
       background: rgba(16,185,129,0.12);
       color: #10b981;
@@ -533,8 +525,6 @@
       color: #ef4444;
       border-color: rgba(239,68,68,0.2);
     }
-
-    /* ── Nav 아이콘 버튼 ── */
     .nav-icon-btn {
       background: rgba(255,255,255,0.05);
       border: 1px solid var(--border);
@@ -551,7 +541,6 @@
       border-color: var(--accent);
     }
 
-    /* ── 게임 프로필 카드 ── */
     .pf-game-card {
       background: rgba(255,255,255,0.03);
       border: 1px solid var(--border);
@@ -574,7 +563,6 @@
     .pf-game-name { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
     .pf-game-detail { font-size: 11px; color: var(--muted); }
 
-    /* ── 친구 아이템 ── */
     .friend-item {
       display: flex;
       align-items: center;
@@ -1001,16 +989,7 @@
   }
 
   let POSTS = [ // 게시글 저장
-    // { id:1,  gameId:1, icon:'⚔️', game:'리그 오브 레전드', title:'칼바람 나락 5인 빠르게 채울게요!',          author:'빠른손 최', tier:'골드', current:3, total:5,  status:'open', time:'2분 전',  color:'#c89b3c' },
-    // { id:2,  gameId:1, icon:'⚔️', game:'리그 오브 레전드', title:'다이아 이상 솔랭 듀오 구해요 원딜입니다',     author:'ADC장인',   tier:'다이아', current:1, total:2, status:'open', time:'5분 전',  color:'#c89b3c' },
-    // { id:3,  gameId:2, icon:'🔫', game:'배틀그라운드',      title:'스쿼드 4인팟 모집 중 야겜 ㄱ?',             author:'배그고수',  tier:'무관',  current:2, total:4,  status:'open', time:'8분 전',  color:'#e07b39' },
-    // { id:4,  gameId:1, icon:'⚔️', game:'리그 오브 레전드', title:'플레티넘 이상 내전 팀 구합니다 5vs5',         author:'내전마스터', tier:'플래티넘', current:4, total:5, status:'open', time:'11분 전', color:'#c89b3c' },
-    // { id:5,  gameId:4, icon:'🎯', game:'발로란트',          title:'골드~플레 언랭작 듀오 같이 하실 분',         author:'발로신인',  tier:'골드',  current:1, total:2,  status:'open', time:'15분 전', color:'#ef4444' },
-    // { id:6,  gameId:2, icon:'🔫', game:'배틀그라운드',      title:'TPP 스쿼드 채워요 진지하게 1등 목표',        author:'치킨헌터',  tier:'무관',  current:3, total:4,  status:'open', time:'18분 전', color:'#e07b39' },
-    // { id:7,  gameId:1, icon:'⚔️', game:'리그 오브 레전드', title:'마스터 이상 챌린저 도전 팀원 모집',          author:'챌도전자',  tier:'마스터', current:2, total:5, status:'open', time:'22분 전', color:'#c89b3c' },
-    // { id:8,  gameId:4, icon:'🎯', game:'발로란트',          title:'다이아 5스택 모집완료 조만간 다시 올게요',   author:'다이아팀장', tier:'다이아', current:5, total:5, status:'full', time:'30분 전', color:'#ef4444' },
-    // { id:9,  gameId:2, icon:'🔫', game:'배틀그라운드',      title:'솔로 스쿼드 넣어주실 팀 구합니다',           author:'솔스쿼드',  tier:'무관',  current:1, total:4,  status:'open', time:'35분 전', color:'#e07b39' },
-    // { id:10, gameId:1, icon:'⚔️', game:'리그 오브 레전드', title:'실버 탈출 각 잡고 듀오 구합니다 정글 가능', author:'실버탈출',  tier:'실버',  current:1, total:2,  status:'open', time:'40분 전', color:'#c89b3c' },
+    
   ];
 
   let activeGameId   = 'all';  // 'all' = 전체
