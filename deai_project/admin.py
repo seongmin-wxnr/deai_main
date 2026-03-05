@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import BaseUserInformation_data, UserPreferGame, Post_Community, PostParticipant , Friendship 
+from .models import BaseUserInformation_data, UserPreferGame, Post_Community, PostParticipant , Friendship , ChatMessage , JoinRequest , Notification, DirectMessage
 
 @admin.register(BaseUserInformation_data)
 class UserAdmin(admin.ModelAdmin):
@@ -26,6 +26,26 @@ class PostAdmin(admin.ModelAdmin):
 class PostParticipantAdmin(admin.ModelAdmin):
     list_display = ('id', 'user', 'post', 'joined_at')
 
-@admin.register(Friendship)
-class PostParticipantAdmin(admin.ModelAdmin):
-    list_display = ('STATUS_CHOICES', 'from_user', 'status', 'created_at')
+@admin.register(ChatMessage)
+class ChatMessageAdmin(admin.ModelAdmin):
+    list_display  = ('id', 'post', 'user', 'message', 'sent_at')
+    list_filter   = ('post',)
+    search_fields = ('user__username', 'message')
+    ordering      = ('-sent_at',)
+    readonly_fields = ('sent_at',)
+
+@admin.register(JoinRequest)
+class JoinRequestAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user', 'post', 'status', 'created_at')
+    list_filter  = ('status',)
+
+@admin.register(Notification)
+class NotificationAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user', 'type', 'message', 'is_read', 'created_at')
+    list_filter  = ('type', 'is_read')
+
+@admin.register(DirectMessage)
+class DirectMessageAdmin(admin.ModelAdmin):
+    list_display = ('id', 'sender', 'receiver', 'message', 'sent_at')
+    search_fields = ('sender__username', 'receiver__username', 'message')
+    ordering = ('-sent_at',)
