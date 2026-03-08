@@ -149,10 +149,10 @@ CSRF_TRUSTED_ORIGINS = [
 # 이메일 설정 (Gmail SMTP)
 EMAIL_BACKEND       = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST          = 'smtp.gmail.com'
-EMAIL_PORT          = 587
-EMAIL_USE_TLS       = True
-EMAIL_HOST_USER     = 'yuilove9105@gmail.com'   # ← 본인 Gmail 주소로 변경
-EMAIL_HOST_PASSWORD = 'dnjwthew etqylovb'      # ← Gmail 앱 비밀번호로 변경
+EMAIL_PORT          = 
+EMAIL_USE_TLS       = 
+EMAIL_HOST_USER     = ''   # ← 본인 Gmail 주소로 변경
+EMAIL_HOST_PASSWORD = ''      # ← Gmail 앱 비밀번호로 변경
 DEFAULT_FROM_EMAIL  = EMAIL_HOST_USER
 
 # 초기 정의 -> riot api
