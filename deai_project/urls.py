@@ -1,18 +1,23 @@
 from django.urls import path
 from . import views
+from . import riot_apiViews
+import urllib.request
+import urllib.error
+import urllib.parse
 
 urlpatterns = [
-    path("",views.index, name='index'),
+    path("",views.index_, name='index'),
     path("login/",views.login_,name='Login'),
     path("register/",views.register_, name='register'),
     path("selectGame/", views.selection_page,name='selectGames'),
     path("Deai_main/",views.Main_rq,name='Deai_main'),
-    path("eventPage/", views.eventPage, name='eventPage'),
     path("aboutDeai/", views.aboutDeai, name='aboutDeai'),
+    path("createAuthor/", views.createAuthor , name="createAuthor"),
 
     ## API space
+    
     path("logout/",views.logout_, name='logout'),
-    path("api/auth/register/",views.api_register,name='api_register'),
+    path("api/auth/register/",views.api_register,name='api_register'), 
     path("api/auth/login/", views.api_login, name='api_login'),
     path("api/game/save/", views.save_prefer_game,name='save_prefer_game'),
     path("api/game/my/", views.get_my_games,name='get_my_games'),
@@ -35,5 +40,29 @@ urlpatterns = [
     path("api/notifications/read/",views.api_notifications_read,name='api_notifications_read'),
     path("api/dm/send/", views.api_dm_send,name='api_dm_send'),
     path("api/dm/history/<str:username>/", views.api_dm_history, name='api_dm_history'),
-    path("api/notifications/clear/", views.api_notifications_clear, name='api_notifications_clear'),
+    path("api/notifications/clear/", views.api_notifications_clear,name='api_notifications_clear'),
+    path("api/report/", views.api_report, name='api_report'),
+    path("admin-panel/",views.admin_panel, name='admin_panel'),
+    path("api/admin/reports/",views.api_admin_reports, name='api_admin_reports'),
+    path("api/admin/report/action/", views.api_admin_report_action, name='api_admin_report_action'),
+    path("api/admin/user/", views.api_admin_user_lookup,name='api_admin_user_lookup'),
+    path("api/admin/analytics/", views.api_admin_analytics, name='api_admin_analytics'),
+    path("api/admin/unblock/",    views.api_admin_unblock,name='api_admin_unblock'),
+    path("api/auth/send-code/",   views.api_send_verify_code, name='api_send_verify_code'),
+    path("api/auth/verify-code/", views.api_verify_code, name='api_verify_code'),
+    path("api/game/stats/" , views.api_game_stats, name="api/game/stats/"),
+
+    ## riot api space
+    # riot/lol/ + user
+    path("RiotSearch/", riot_apiViews.riotSearchPage_rendering,name='riot_lol_search'),
+    path("RiotUserPage/", riot_apiViews.riotUserPage_rendering, name='riot_lol_user'),
+    path("riot/lol/user/", riot_apiViews.riotUserPage_rendering, name='riot_lol_user2'),
+    path("api/riot/account/", riot_apiViews.riot_api_search_user, name='riot_api_account'),
+    path("api/riot/rank/", riot_apiViews.riot_api_rankInfo, name='riot_api_rank'),
+    path("api/riot/mastery/", riot_apiViews.riot_api_getChampionMastery, name='riot_api_mastery'),
+    path("api/riot/matches/", riot_apiViews.riot_api_getMatchIDs,name='riot_api_matches'),
+    path("api/riot/match/<str:match_id>/", riot_apiViews.riot_api_matchDetail, name='riot_api_match_detail'),
+    path("api/riot/dd-version/", riot_apiViews.riot_api_ddVersion, name='riot_api_dd_version'),
+    path("api/riot/champions/", riot_apiViews.riot_api_champions, name='riot_api_champions'),
+    path("api/riot/dd-spell/", riot_apiViews.riot_api_ddSpell, name='riot_api_dd_spell'),
 ]
