@@ -15,6 +15,7 @@ from django import apps
 from django.apps import *
 import os, sys
 import channels
+from . import config
 from channels.routing import ProtocolTypeRouter 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -24,17 +25,23 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-g-d@+#t)g+-)z9p(iv_%!*fezj9((^#v17^(gyo0#hdvcxd2)n'
+SECRET_KEY = ''
+## riot api line
+RIOT_API_KEY = config.RIOT_API_KEY
+RIOT_DD_VERSION = '16.5.1'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
-
-
+# ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['*']
+# ngrok HTTPS 헤더 신뢰
+CSRF_TRUSTED_ORIGINS = ['https://unmasticatory-shannon-unfrosty.ngrok-free.dev']
+# SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')  # ngrok/배포 시에만 활성화
 # Application definition
 
 INSTALLED_APPS = [
+    #'score',
     'channels',
     "deai_project",
     'django.contrib.admin',
@@ -49,7 +56,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    #'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -129,3 +136,36 @@ STATICFILES_DIRS = [
     # os.path.join(BASE_DIR, 'static'),  # 원본 static 파일 위치
      BASE_DIR / 'deai_project' / 'static',
 ]
+
+SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_SECURE   = False
+CSRF_COOKIE_SAMESITE    = 'Lax'
+CSRF_COOKIE_SECURE      = False
+
+CSRF_TRUSTED_ORIGINS = [
+    'https://unmasticatory-shannon-unfrosty.ngrok-free.dev',
+    'http://unmasticatory-shannon-unfrosty.ngrok-free.dev',  # ← http도 추가
+]
+# 이메일 설정 (Gmail SMTP)
+EMAIL_BACKEND       = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST          = 'smtp.gmail.com'
+EMAIL_PORT          = 587
+EMAIL_USE_TLS       = True
+EMAIL_HOST_USER     = 'yuilove9105@gmail.com'   # ← 본인 Gmail 주소로 변경
+EMAIL_HOST_PASSWORD = 'dnjwthew etqylovb'      # ← Gmail 앱 비밀번호로 변경
+DEFAULT_FROM_EMAIL  = EMAIL_HOST_USER
+
+# 초기 정의 -> riot api
+RIOT_REGION_MAP = {
+    'kr':   {'platform': 'kr.api.riotgames.com',   'regional': 'asia.api.riotgames.com'},
+    'na1':  {'platform': 'na1.api.riotgames.com',  'regional': 'americas.api.riotgames.com'},
+    'euw1': {'platform': 'euw1.api.riotgames.com', 'regional': 'europe.api.riotgames.com'},
+    'eun1': {'platform': 'eun1.api.riotgames.com', 'regional': 'europe.api.riotgames.com'},
+    'jp1':  {'platform': 'jp1.api.riotgames.com',  'regional': 'asia.api.riotgames.com'},
+    'br1':  {'platform': 'br1.api.riotgames.com',  'regional': 'americas.api.riotgames.com'},
+    'la1':  {'platform': 'la1.api.riotgames.com',  'regional': 'americas.api.riotgames.com'},
+    'la2':  {'platform': 'la2.api.riotgames.com',  'regional': 'americas.api.riotgames.com'},
+    'oc1':  {'platform': 'oc1.api.riotgames.com',  'regional': 'sea.api.riotgames.com'},
+    'tr1':  {'platform': 'tr1.api.riotgames.com',  'regional': 'europe.api.riotgames.com'},
+    'ru':   {'platform': 'ru.api.riotgames.com',   'regional': 'europe.api.riotgames.com'},
+}
