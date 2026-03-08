@@ -7,6 +7,7 @@ class BaseUserInformation_data(models.Model):
     password   = models.CharField(max_length=256, verbose_name='비밀번호')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='가입일')  
     is_active  = models.BooleanField(default=True, verbose_name='활성 여부')
+    blocked_until = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         db_table = 'user_info'
@@ -206,3 +207,14 @@ class DirectMessage(models.Model):
 
     def __str__(self):
         return f'{self.sender.username} → {self.receiver.username}: {self.message[:20]}'
+
+class UserReport(models.Model):
+    reporter = models.ForeignKey(BaseUserInformation_data, on_delete=models.CASCADE, related_name='reports_sent')
+    reported = models.ForeignKey(BaseUserInformation_data, on_delete=models.CASCADE, related_name='reports_received')
+    category = models.CharField(max_length=50)
+    status    = models.CharField(max_length=20, default='pending')
+    detail   = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'user_report'
