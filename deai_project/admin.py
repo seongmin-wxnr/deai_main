@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import BaseUserInformation_data, UserPreferGame, Post_Community, PostParticipant , Friendship , ChatMessage , JoinRequest , Notification, DirectMessage
+from .models import BaseUserInformation_data, UserPreferGame, Post_Community, PostParticipant, Friendship, ChatMessage, JoinRequest, Notification, DirectMessage, UserReport
 
 @admin.register(BaseUserInformation_data)
 class UserAdmin(admin.ModelAdmin):
@@ -44,8 +44,22 @@ class NotificationAdmin(admin.ModelAdmin):
     list_display = ('id', 'user', 'type', 'message', 'is_read', 'created_at')
     list_filter  = ('type', 'is_read')
 
+@admin.register(Friendship)
+class FriendshipAdmin(admin.ModelAdmin):
+    list_display  = ('id', 'from_user', 'to_user', 'status', 'created_at')
+    list_filter   = ('status',)
+    search_fields = ('from_user__username', 'to_user__username')
+    ordering      = ('-created_at',)
+
 @admin.register(DirectMessage)
 class DirectMessageAdmin(admin.ModelAdmin):
-    list_display = ('id', 'sender', 'receiver', 'message', 'sent_at')
+    list_display  = ('id', 'sender', 'receiver', 'message', 'sent_at')
     search_fields = ('sender__username', 'receiver__username', 'message')
-    ordering = ('-sent_at',)
+    ordering      = ('-sent_at',)
+
+@admin.register(UserReport)
+class UserReportAdmin(admin.ModelAdmin):
+    list_display  = ('id', 'reporter', 'reported', 'category', 'status', 'created_at')
+    list_filter   = ('status', 'category')
+    search_fields = ('reporter__username', 'reported__username', 'detail')
+    ordering      = ('-created_at',)
