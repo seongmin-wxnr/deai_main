@@ -1,17 +1,24 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from django.contrib.auth.hashers import make_password, check_password
 from django.db.models import Q
+from django.utils import timezone
+from django.core.mail import send_mail
+from django.conf import settings
+from datetime import datetime, timedelta
+import json, re, random
 
-## 데이터베이스 관ㄹ리
-from .models import BaseUserInformation_data, UserPreferGame, Post_Community, PostParticipant, Friendship , ChatMessage , Notification, JoinRequest, DirectMessage
-from datetime import datetime
-import json
+from .models import (
+    BaseUserInformation_data, UserPreferGame, Post_Community,
+    PostParticipant, Friendship, ChatMessage, Notification,
+    JoinRequest, DirectMessage, UserReport
+)
+    
+def createAuthor(request):
+    return render(request, "create_.html")
 
 def aboutDeai(request):
     return render(request, "aboutDeai.html")
-def eventPage(request):
-    return render(request, "eventPage.html")
     
 def selection_page(request):
     if not request.session.get('username'):
@@ -28,17 +35,15 @@ def selection_page(request):
         return render(request, "selectGame.html", {
             'username': username 
         })
-     
-    
-def index(request):
+
+def index_(request):
     return render(request, "index.html")
 
 # fix -> 2026.03.02
 def Main_rq(request):
     if not request.session.get('user_id'):
         return render(request, 'login.html')
-    
-    import json
+
     games = UserPreferGame.objects.filter(
         user_id=request.session['user_id']
     ).values('game_id', 'name_tag', 'tier', 'score_best', 'score_current', 'sub_info')
@@ -87,9 +92,28 @@ def login_(request):
                     'message': '비밀번호가 틀렸습니다.'
                 }, status=401)
 
+            # 차단 여부 확인
+            if user.blocked_until and user.blocked_until > timezone.now():
+                remaining = user.blocked_until - timezone.now()
+                hours   = int(remaining.total_seconds() // 3600)
+                minutes = int((remaining.total_seconds() % 3600) // 60)
+                return JsonResponse({
+                    'success': False,
+                    'message': f'계정이 차단되었습니다. ({hours}시간 {minutes}분 후 해제)'
+                }, status=403)
+
             request.session['user_id']  = user.id
             request.session['username'] = user.username
             request.session['email']    = user.email
+
+            # admin 전용 패널
+            if username == 'admin':
+                return JsonResponse({
+                    'success'     : True,
+                    'message'     : '관리자 로그인 성공!',
+                    'username'    : user.username,
+                    'redirect_url': '/admin-panel/',
+                })
 
             has_game = UserPreferGame.objects.filter(user=user).exists()
             redirect_url = '/Deai_main/' if has_game else '/selectGame/'
@@ -164,6 +188,16 @@ def api_register(request):
         if not email or not username or not password:
             return JsonResponse({'success': False, 'message': '모든 항목을 입력해주세요.'}, status=400)
 
+        # 유저이름: 영문+숫자만, 3자 이상
+        if not re.match(r'^[a-zA-Z0-9]{3,}$', username):
+            return JsonResponse({'success': False, 'message': '유저 이름은 영문과 숫자만 사용할 수 있습니다. (3자 이상)'}, status=400)
+
+        # 비밀번호: 8자 이상 + 특수문자 필수
+        if len(password) < 8:
+            return JsonResponse({'success': False, 'message': '비밀번호는 8자 이상이어야 합니다.'}, status=400)
+        if not re.search(r'[^A-Za-z0-9]', password):
+            return JsonResponse({'success': False, 'message': '비밀번호에 특수문자를 1개 이상 포함해주세요.'}, status=400)
+
         if BaseUserInformation_data.objects.filter(email=email).exists():
             return JsonResponse({'success': False, 'message': '이미 사용중인 이메일입니다.'}, status=409)
 
@@ -175,7 +209,7 @@ def api_register(request):
             username = username,
             password = make_password(password),
         )
-        print("login -> " + str(username))
+        print(f"[회원가입] {username} ({email})", flush=True)
         return JsonResponse({'success': True, 'message': f'{username}님 환영합니다!'}, status=201)
 
     except Exception as e:
@@ -201,11 +235,29 @@ def api_login(request):
         if not check_password(password, user.password):
             return JsonResponse({'success': False, 'message': '비밀번호가 틀렸습니다.'}, status=401)
 
+        # 차단 여부 확인
+        if user.blocked_until and user.blocked_until > timezone.now():
+            remaining = user.blocked_until - timezone.now()
+            hours   = int(remaining.total_seconds() // 3600)
+            minutes = int((remaining.total_seconds() % 3600) // 60)
+            return JsonResponse({
+                'success': False,
+                'message': f'계정이 차단되었습니다. ({hours}시간 {minutes}분 후 해제)'
+            }, status=403)
+
         request.session['user_id']  = user.id
         request.session['username'] = user.username
         request.session['email']    = user.email
 
-        # 게임 정보 1 -> pass 아니면 ->
+        # admin 전용 패널
+        if username == 'admin':
+            return JsonResponse({
+                'success'     : True,
+                'message'     : '관리자 로그인 성공!',
+                'username'    : user.username,
+                'redirect_url': '/admin-panel/',
+            })
+
         has_game = UserPreferGame.objects.filter(user=user).exists()
         redirect_url = '/Deai_main/' if has_game else '/selectGame/'
 
@@ -213,8 +265,10 @@ def api_login(request):
             'success'     : True,
             'message'     : '로그인 성공!',
             'username'    : user.username,
-            'redirect_url': redirect_url,   # ← 프론트에 URL 전달
+            'redirect_url': redirect_url,
         })
+
+        
 
     except Exception as e:
         return JsonResponse({'success': False, 'message': f'서버 오류: {str(e)}'}, status=500)
@@ -809,7 +863,7 @@ def api_post_join(request, post_id):
             if existing.status == 'pending':
                 return JsonResponse({'success': False, 'message': '이미 가입 신청 중입니다.'}, status=400)
             else:
-                # rejected 또는 accepted 후 탈퇴
+                # rejected 또는 accepted 후 탈퇴 → 재신청: 기존 요청 재활용
                 existing.status = 'pending'
                 existing.save()
                 join_req = existing
@@ -979,3 +1033,327 @@ def api_notifications_clear(request):
     user = BaseUserInformation_data.objects.get(id=request.session['user_id'])
     Notification.objects.filter(user=user).delete()
     return JsonResponse({'success': True})
+
+def api_report(request):
+    if request.method != 'POST':
+        return JsonResponse({'success': False}, status=405)
+    if not request.session.get('user_id'):
+        return JsonResponse({'success': False}, status=401)
+    data     = json.loads(request.body)
+    reporter = BaseUserInformation_data.objects.get(id=request.session['user_id'])
+    reported = BaseUserInformation_data.objects.get(username=data['reported_username'])
+    if reporter == reported:
+        return JsonResponse({'success': False, 'message': '자기 자신은 신고할 수 없어요.'})
+    UserReport.objects.create(
+        reporter=reporter, reported=reported,
+        category=data['category'], detail=data['detail']
+    )
+    return JsonResponse({'success': True})
+
+def admin_panel(request):
+    if request.session.get('username') != 'admin':
+        return render('/deai_main/')
+    return render(request, 'AdminPanel.html')
+
+def api_admin_reports(request):
+    if request.session.get('username') != 'admin':
+        return JsonResponse({'success': False}, status=403)
+    reports = UserReport.objects.select_related('reporter','reported').order_by('-created_at')
+    return JsonResponse({'success': True, 'reports': [{
+        'id'        : r.id,
+        'reporter'  : r.reporter.username,
+        'reported'  : r.reported.username,
+        'category'  : r.category,
+        'detail'    : r.detail,
+        'status'    : r.status,
+        'created_at': r.created_at.strftime('%m/%d %H:%M'),
+    } for r in reports]})
+
+def api_admin_report_action(request):
+    if request.session.get('username') != 'admin':
+        return JsonResponse({'success': False}, status=403)
+    data      = json.loads(request.body)
+    report    = UserReport.objects.get(id=data['report_id'])
+    report.status = data['action']
+    report.save()
+    if data['action'] == 'blocked':
+        from django.utils import timezone
+        from datetime import timedelta
+        report.reported.blocked_until = timezone.now() + timedelta(hours=24)
+        report.reported.save()
+    return JsonResponse({'success': True})
+
+def api_admin_user_lookup(request):
+    if request.session.get('username') != 'admin':
+        return JsonResponse({'success': False}, status=403)
+
+    q = request.GET.get('q', '').strip()
+    if not q:
+        return JsonResponse({'success': False, 'message': '검색어를 입력해주세요.'})
+
+    try:
+        user  = BaseUserInformation_data.objects.get(username=q)
+        games = list(UserPreferGame.objects.filter(user=user).values(
+            'game_id', 'name_tag', 'tier', 'score_best', 'score_current', 'sub_info'
+        ))
+
+        # blocked_until 필드가 있는 경우만 처리
+        blocked_str = None
+        if hasattr(user, 'blocked_until') and user.blocked_until:
+            from django.utils import timezone as tz
+            if user.blocked_until > tz.now():
+                blocked_str = user.blocked_until.strftime('%m/%d %H:%M')
+
+        return JsonResponse({'success': True, 'user': {
+            'username'     : user.username,
+            'email'        : user.email,
+            'password_hash': user.password,
+            'joined_at'    : user.created_at.strftime('%Y-%m-%d %H:%M'),
+            'blocked_until': blocked_str,
+            'games'        : games,
+        }})
+
+    except BaseUserInformation_data.DoesNotExist:
+        return JsonResponse({'success': False, 'message': '존재하지 않는 유저입니다.'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+def api_admin_analytics(request):
+    if request.session.get('username') != 'admin':
+        return JsonResponse({'success': False}, status=403)
+
+    from django.db.models import Count
+
+    # ── 유저 통계 ──
+    total_users   = BaseUserInformation_data.objects.count()
+    active_users  = BaseUserInformation_data.objects.filter(is_active=True).count()
+    blocked_users = BaseUserInformation_data.objects.filter(
+        blocked_until__gt=timezone.now()
+    ).count()
+
+    # ── 게시글 통계 ──
+    total_posts  = Post_Community.objects.count()
+    open_posts   = Post_Community.objects.filter(is_open=True).count()
+    closed_posts = total_posts - open_posts
+
+    # ── 메시지 통계 ──
+    party_messages = ChatMessage.objects.count()
+    dm_messages    = DirectMessage.objects.count()
+    total_messages = party_messages + dm_messages
+
+    # ── 신고 통계 ──
+    total_reports   = UserReport.objects.count()
+    pending_reports = UserReport.objects.filter(status='pending').count()
+
+    # ── 게임별 유저 분포 ──
+    game_dist_qs = UserPreferGame.objects.values('game_id').annotate(cnt=Count('id')).order_by('-cnt')
+    game_dist = {row['game_id']: row['cnt'] for row in game_dist_qs}
+
+    # ── 게임별 게시글 수 ──
+    post_by_game_qs = Post_Community.objects.values('game_id').annotate(cnt=Count('id')).order_by('-cnt')
+    post_by_game = {row['game_id']: row['cnt'] for row in post_by_game_qs}
+
+    # ── 신고 카테고리 분포 ──
+    rep_cat_qs = UserReport.objects.values('category').annotate(cnt=Count('id')).order_by('-cnt')
+    report_category = {row['category']: row['cnt'] for row in rep_cat_qs}
+
+    # ── TOP 5 게시글 작성자 ──
+    top_posters = list(
+        Post_Community.objects.values('user__username')
+        .annotate(count=Count('id'))
+        .order_by('-count')[:5]
+    )
+    top_posters = [{'username': r['user__username'], 'count': r['count']} for r in top_posters]
+
+    # ── TOP 5 채팅 활성 유저 ──
+    top_chatters = list(
+        ChatMessage.objects.values('user__username')
+        .annotate(count=Count('id'))
+        .order_by('-count')[:5]
+    )
+    top_chatters = [{'username': r['user__username'], 'count': r['count']} for r in top_chatters]
+
+    # ── 최근 활동 타임라인 (최신 10개) ──
+    recent_activity = []
+
+    recent_posts = Post_Community.objects.select_related('user').order_by('-post_upload_at')[:4]
+    for p in recent_posts:
+        recent_activity.append({
+            'text' : f'{p.user.username}님이 [{p.post_title}] 게시글 작성',
+            'time' : p.post_upload_at.strftime('%m/%d %H:%M'),
+            'color': '#c9a84c',
+            'sort' : p.post_upload_at,
+        })
+
+    recent_reports = UserReport.objects.select_related('reporter', 'reported').order_by('-created_at')[:3]
+    for r in recent_reports:
+        recent_activity.append({
+            'text' : f'{r.reporter.username}님이 {r.reported.username}님 신고 ({r.category})',
+            'time' : r.created_at.strftime('%m/%d %H:%M'),
+            'color': '#ef4444',
+            'sort' : r.created_at,
+        })
+
+    recent_joins = PostParticipant.objects.select_related('user', 'post').order_by('-joined_at')[:3]
+    for j in recent_joins:
+        recent_activity.append({
+            'text' : f'{j.user.username}님이 [{j.post.post_title}] 파티 참여',
+            'time' : j.joined_at.strftime('%m/%d %H:%M'),
+            'color': '#10b981',
+            'sort' : j.joined_at,
+        })
+
+    recent_activity.sort(key=lambda x: x['sort'], reverse=True)
+    for a in recent_activity:
+        del a['sort']
+    recent_activity = recent_activity[:10]
+
+    return JsonResponse({
+        'success'        : True,
+        'total_users'    : total_users,
+        'active_users'   : active_users,
+        'blocked_users'  : blocked_users,
+        'total_posts'    : total_posts,
+        'open_posts'     : open_posts,
+        'closed_posts'   : closed_posts,
+        'party_messages' : party_messages,
+        'dm_messages'    : dm_messages,
+        'total_messages' : total_messages,
+        'total_reports'  : total_reports,
+        'pending_reports': pending_reports,
+        'game_dist'      : game_dist,
+        'post_by_game'   : post_by_game,
+        'report_category': report_category,
+        'top_posters'    : top_posters,
+        'top_chatters'   : top_chatters,
+        'recent_activity': recent_activity,
+    })
+
+def api_admin_unblock(request):
+    if request.method != 'POST':
+        return JsonResponse({'success': False}, status=405)
+    if request.session.get('username') != 'admin':
+        return JsonResponse({'success': False}, status=403)
+    try:
+        data     = json.loads(request.body)
+        username = data.get('username', '').strip()
+        user     = BaseUserInformation_data.objects.get(username=username)
+        user.blocked_until = None
+        user.save()
+        return JsonResponse({'success': True})
+    except BaseUserInformation_data.DoesNotExist:
+        return JsonResponse({'success': False, 'message': '존재하지 않는 유저입니다.'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+
+def api_send_verify_code(request):
+    """이메일로 6자리 인증 코드 발송"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False}, status=405)
+    try:
+        data  = json.loads(request.body)
+        email = data.get('email', '').strip()
+        if not email:
+            return JsonResponse({'success': False, 'message': '이메일을 입력해주세요.'})
+        if BaseUserInformation_data.objects.filter(email=email).exists():
+            return JsonResponse({'success': False, 'message': '이미 사용 중인 이메일입니다.'})
+
+        code = str(random.randint(100000, 999999))
+        request.session['email_verify_code']  = code
+        request.session['email_verify_email'] = email
+        request.session['email_verify_at']    = timezone.now().isoformat()
+
+        send_mail(
+            subject        = '[Deai] 이메일 인증 코드',
+            message        = f'인증 코드: {code}\n\n이 코드는 5분간 유효합니다.',
+            from_email     = settings.DEFAULT_FROM_EMAIL,
+            recipient_list = [email],
+            fail_silently  = False,
+        )
+        print(f"[이메일 인증] {email} → 코드 {code} 발송", flush=True)
+        return JsonResponse({'success': True})
+
+    except Exception as e:
+        print(f"[이메일 인증 오류] {e}", flush=True)
+        return JsonResponse({'success': False, 'message': f'이메일 발송 실패: {str(e)}'}, status=500)
+
+
+def api_verify_code(request):
+    """인증 코드 확인 후 회원가입 완료"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False}, status=405)
+    try:
+        data        = json.loads(request.body)
+        code_input  = data.get('code', '').strip()
+        saved_code  = request.session.get('email_verify_code')
+        saved_email = request.session.get('email_verify_email')
+        saved_at    = request.session.get('email_verify_at')
+
+        if not saved_code or not saved_email:
+            return JsonResponse({'success': False, 'message': '인증 코드를 먼저 요청해주세요.'})
+
+        # 5분 만료 체크
+        verified_at = datetime.fromisoformat(saved_at)
+        if timezone.is_naive(verified_at):
+            from django.utils.timezone import make_aware
+            verified_at = make_aware(verified_at)
+        if timezone.now() > verified_at + timedelta(minutes=5):
+            return JsonResponse({'success': False, 'message': '인증 코드가 만료되었습니다. 다시 요청해주세요.'})
+
+        if code_input != saved_code:
+            return JsonResponse({'success': False, 'message': '인증 코드가 올바르지 않습니다.'})
+
+        username  = data.get('username', '').strip()
+        password  = data.get('password', '').strip()
+
+        if not username or not password:
+            return JsonResponse({'success': False, 'message': '회원 정보가 올바르지 않습니다.'})
+        if not re.match(r'^[a-zA-Z0-9]{3,}$', username):
+            return JsonResponse({'success': False, 'message': '유저 이름은 영문과 숫자만 사용할 수 있습니다.'})
+        if len(password) < 8 or not re.search(r'[^A-Za-z0-9]', password):
+            return JsonResponse({'success': False, 'message': '비밀번호 조건을 확인해주세요.'})
+        if BaseUserInformation_data.objects.filter(username=username).exists():
+            return JsonResponse({'success': False, 'message': '이미 사용 중인 닉네임입니다.'})
+        if BaseUserInformation_data.objects.filter(email=saved_email).exists():
+            return JsonResponse({'success': False, 'message': '이미 사용 중인 이메일입니다.'})
+
+        user = BaseUserInformation_data.objects.create(
+            username  = username,
+            email     = saved_email,
+            password  = make_password(password),
+            is_active = True,
+        )
+        request.session['user_id']  = user.id
+        request.session['username'] = user.username
+        request.session['email']    = user.email
+        for key in ('email_verify_code', 'email_verify_email', 'email_verify_at'):
+            request.session.pop(key, None)
+
+        print(f"[회원가입 완료] {username} ({saved_email})", flush=True)
+        return JsonResponse({'success': True})
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': f'서버 오류: {str(e)}'}, status=500)
+
+def api_game_stats(request):
+    """게임별 선택 유저 수 반환"""
+    from django.db.models import Count
+    stats = (
+        UserPreferGame.objects
+        .values('game_id')
+        .annotate(count=Count('id'))
+    )
+    # game_id가 문자열(lol, val...) 또는 숫자(1~5) 둘 다 대응
+    # selectGame.html의 id는 1~5 숫자형
+    ID_MAP = {'lol':1, 'val':2, 'ow':3, 'fifa':4, 'genshin':5}
+    result = []
+    for s in stats:
+        gid = s['game_id']
+        numeric_id = ID_MAP.get(gid, gid)  # 이미 숫자면 그대로
+        try:
+            numeric_id = int(numeric_id)
+        except (ValueError, TypeError):
+            pass
+        result.append({'game_id': numeric_id, 'count': s['count']})
+    return JsonResponse({'success': True, 'stats': result})
