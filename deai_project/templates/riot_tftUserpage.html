@@ -1,0 +1,1449 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title id="page-title">소환사 정보 — Deai × TFT</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+/* ═══════════════════════════════════════════════
+   TFT THEME  ·  어두운 보라 × 금색
+   ═══════════════════════════════════════════════ */
+:root {
+  --bg:          #07060e;
+  --bg2:         #0d0b18;
+  --bg3:         #131020;
+  --bg4:         #1a1626;
+  --border:      #2a2440;
+  --border-pur:  rgba(138,99,210,0.28);
+  --text-bright: #f0ece8;
+  --text:        #c4bcd4;
+  --text-sub:    #9088a8;
+  --text-muted:  #584e6c;
+  /* 보라 팔레트 */
+  --pur:         #8a63d2;
+  --pur-mid:     #7248c4;
+  --pur-dim:     rgba(138,99,210,0.13);
+  --pur-glow:    rgba(138,99,210,0.28);
+  --pur-light:   #b89cf0;
+  --pur-pale:    #d8ccf8;
+  /* 금색 팔레트 */
+  --gold:        #c89b3c;
+  --gold-bright: #f0e6d3;
+  --gold-dim:    rgba(200,155,60,0.15);
+  --gold-glow:   rgba(200,155,60,0.28);
+  /* 등수 색상 */
+  --top1:        #f0c050;
+  --top2:        #c8d8e8;
+  --top3:        #cd7f32;
+  --top4:        #6ec47a;
+  /* 트레이트 등급 */
+  --trait-bronze:    #a0744c;
+  --trait-silver:    #a8b8c8;
+  --trait-gold:      #d4aa4c;
+  --trait-chromatic: #d070c0;
+  /* 기타 */
+  --blue:        #60a5fa;
+  --font-ui:     'Rajdhani', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+}
+
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+html, body { background:var(--bg); color:var(--text); font-family:var(--font-ui); min-height:100vh; }
+
+body::before {
+  content:''; position:fixed; inset:0; z-index:0; pointer-events:none;
+  background-image:
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size:64px 64px; opacity:.15;
+}
+body::after {
+  content:''; position:fixed; inset:0; z-index:0; pointer-events:none;
+  background:radial-gradient(ellipse 80% 50% at 50% 0%, rgba(138,99,210,.08) 0%, transparent 60%);
+}
+
+/* ─── NAV ─── */
+.nav {
+  position:fixed; top:0; left:0; right:0; height:56px; z-index:1000;
+  background:rgba(7,6,14,.92); backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+  display:flex; align-items:center; gap:12px; padding:0 20px;
+}
+.nav-logo {
+  font-family:var(--font-ui); font-size:18px; font-weight:700;
+  color:var(--gold); letter-spacing:1px; flex-shrink:0; text-decoration:none;
+  display:flex; align-items:center; gap:6px;
+}
+.nav-logo::before {
+  content:''; display:inline-block; width:20px; height:20px;
+  background:linear-gradient(135deg, var(--pur) 0%, var(--gold) 100%);
+  clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
+}
+.nav-search-box {
+  display:flex; align-items:center; flex:1; max-width:420px;
+  background:var(--bg3); border:1px solid var(--border); border-radius:4px;
+  overflow:hidden; transition:border-color .2s;
+}
+.nav-search-box:focus-within { border-color:var(--pur); }
+.nav-back {
+  display:flex; align-items:center; gap:6px;
+  background:none; border:1px solid var(--border); border-radius:4px;
+  padding:6px 12px; color:var(--text-sub); cursor:pointer;
+  font-family:var(--font-ui); font-size:12px; font-weight:600;
+  transition:border-color .18s, color .18s; flex-shrink:0;
+}
+.nav-back:hover { border-color:var(--pur); color:var(--pur-light); }
+
+/* ─── LAYOUT ─── */
+.page-wrapper { position:relative; z-index:1; max-width:1200px; margin:0 auto; padding:72px 16px 40px; }
+.userpage-wrap { display:flex; gap:16px; align-items:flex-start; }
+.sidebar      { width:280px; flex-shrink:0; display:flex; flex-direction:column; gap:12px; }
+.main-content { flex:1; min-width:0; display:flex; flex-direction:column; gap:12px; }
+
+/* ─── CARD ─── */
+.card {
+  background:var(--bg2); border:1px solid var(--border); border-radius:4px;
+  overflow:hidden;
+}
+.card-header {
+  font-family:var(--font-ui); font-size:10px; font-weight:700;
+  letter-spacing:2px; color:var(--text-muted);
+  padding:10px 16px 8px; border-bottom:1px solid var(--border);
+  background:var(--bg3);
+}
+
+/* ─── ANIMATIONS ─── */
+.anim-1 { animation:fadeUp .4s ease both .05s; }
+.anim-2 { animation:fadeUp .4s ease both .12s; }
+.anim-3 { animation:fadeUp .4s ease both .20s; }
+.anim-4 { animation:fadeUp .4s ease both .28s; }
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(10px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+/* ─── SPINNER / STATE ─── */
+.spinner {
+  width:22px; height:22px; border-radius:50%;
+  border:2px solid var(--border); border-top-color:var(--pur);
+  animation:spin .7s linear infinite;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+.state-box {
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:8px; padding:28px 16px; color:var(--text-muted); text-align:center;
+}
+.state-box .icon { font-size:22px; }
+.state-box .msg  { font-family:var(--font-ui); font-size:13px; color:var(--text-sub); font-weight:600; }
+.state-box .sub  { font-family:var(--font-ui); font-size:11px; font-weight:500; }
+
+/* ─── PROFILE CARD ─── */
+.profile-card { position:relative; overflow:hidden; padding-bottom:16px; }
+.profile-backdrop {
+  position:absolute; inset:0; z-index:0;
+  background:linear-gradient(180deg, rgba(138,99,210,.15) 0%, transparent 70%);
+}
+.profile-icon {
+  width:72px; height:72px; border-radius:50%;
+  border:2px solid var(--pur); overflow:hidden;
+  box-shadow:0 0 20px var(--pur-glow);
+}
+.profile-icon img { width:100%; height:100%; object-fit:cover; }
+.profile-level-badge {
+  display:inline-block; margin-top:6px;
+  background:var(--bg4); border:1px solid var(--border);
+  border-radius:10px; padding:2px 10px;
+  font-family:var(--font-ui); font-size:11px; font-weight:700;
+  color:var(--gold); letter-spacing:.5px;
+}
+.profile-gamename {
+  font-family:var(--font-ui); font-size:20px; font-weight:700;
+  color:var(--text-bright); letter-spacing:.5px;
+}
+.profile-tagline {
+  font-family:var(--font-ui); font-size:13px; color:var(--pur-light);
+}
+
+/* ─── RANK CARD ─── */
+.rank-card-header {
+  font-family:var(--font-ui); font-size:10px; font-weight:700;
+  letter-spacing:2px; color:var(--text-muted);
+  padding:10px 16px 8px; border-bottom:1px solid var(--border);
+  background:var(--bg3);
+}
+.tier-main { display:flex; align-items:center; gap:16px; padding:16px; }
+.tier-emblem { width:64px; flex-shrink:0; }
+.tier-emblem img { width:64px; height:64px; object-fit:contain; filter:drop-shadow(0 2px 12px var(--pur-glow)); }
+.tier-name {
+  font-family:var(--font-ui); font-size:18px; font-weight:700;
+  color:var(--gold-bright); letter-spacing:1px;
+}
+.tier-division { font-family:var(--font-ui); font-size:14px; color:var(--gold); font-weight:600; }
+.tier-lp { font-family:var(--font-ui); font-size:13px; color:var(--text-sub); margin-top:2px; }
+.tier-lp span { color:var(--text-muted); }
+.tier-stats-row {
+  display:flex; border-top:1px solid var(--border);
+}
+.tier-stat {
+  flex:1; text-align:center; padding:10px 4px;
+  border-right:1px solid var(--border);
+}
+.tier-stat:last-child { border-right:none; }
+.tier-stat .val { font-family:var(--font-ui); font-size:15px; font-weight:700; color:var(--text-bright); }
+.tier-stat .lbl { font-family:var(--font-ui); font-size:10px; color:var(--text-muted); letter-spacing:.5px; }
+
+/* ─── STATS BAR ─── */
+.stats-bar {
+  display:flex; padding:4px 0;
+}
+.stats-bar-item {
+  flex:1; text-align:center; padding:12px 4px;
+  border-right:1px solid var(--border);
+}
+.stats-bar-item:last-child { border-right:none; }
+.stat-value { font-family:var(--font-ui); font-size:18px; font-weight:700; color:var(--text-bright); }
+.stat-label { font-family:var(--font-ui); font-size:10px; color:var(--text-muted); letter-spacing:.5px; margin-top:2px; }
+
+/* ─── TAB ─── */
+.tab-bar { display:flex; border-bottom:1px solid var(--border); background:var(--bg3); }
+.tab-btn {
+  flex:1; padding:12px; font-family:var(--font-ui); font-size:12px; font-weight:700;
+  letter-spacing:1px; color:var(--text-muted); cursor:pointer;
+  background:none; border:none; border-bottom:2px solid transparent;
+  transition:color .18s, border-color .18s;
+}
+.tab-btn.active  { color:var(--pur-light); border-bottom-color:var(--pur); }
+.tab-btn:hover:not(.active) { color:var(--text-sub); }
+.tab-content { display:none; }
+.tab-content.active { display:block; }
+
+/* ─── MATCH CARD (TFT) ─── */
+.match-card {
+  display:flex; align-items:center; gap:12px;
+  padding:12px 16px; border-bottom:1px solid var(--border);
+  cursor:pointer; transition:background .15s;
+  border-left:3px solid transparent;
+  position:relative;
+}
+.match-card:hover { background:var(--bg3); }
+.match-card.top4  { border-left-color:var(--pur); }
+.match-card.bot4  { border-left-color:var(--text-muted); }
+.match-card:last-child { border-bottom:none; }
+
+/* 등수 배지 */
+.placement-badge {
+  width:44px; flex-shrink:0; text-align:center;
+}
+.placement-num {
+  font-family:var(--font-ui); font-size:26px; font-weight:700; line-height:1;
+}
+.placement-label {
+  font-family:var(--font-ui); font-size:10px; font-weight:700;
+  letter-spacing:1px; color:var(--text-muted);
+}
+
+/* 유닛 목록 */
+.unit-list {
+  display:flex; flex-wrap:wrap; gap:3px;
+  flex:1; min-width:0;
+}
+.unit-chip {
+  position:relative; width:32px; height:32px;
+  border-radius:3px; overflow:hidden; flex-shrink:0;
+  border:1px solid rgba(255,255,255,.08);
+}
+.unit-chip img {
+  width:100%; height:100%; object-fit:cover;
+  display:block;
+}
+.unit-chip .unit-cost {
+  position:absolute; bottom:0; left:0; right:0;
+  height:3px;
+}
+.unit-chip .unit-star {
+  position:absolute; top:0; right:0;
+  font-size:8px; line-height:1;
+  background:rgba(0,0,0,.7); padding:1px 2px;
+  border-radius:0 0 0 2px;
+}
+/* 비용별 테두리 색 */
+.unit-cost-1 { background:#808080; }
+.unit-cost-2 { background:#4dab4d; }
+.unit-cost-3 { background:#4d8be0; }
+.unit-cost-4 { background:#a050c0; }
+.unit-cost-5 { background:#d4aa4c; }
+
+/* 시너지 목록 */
+.trait-list {
+  display:flex; flex-direction:column; gap:3px;
+  width:130px; flex-shrink:0;
+}
+.trait-chip {
+  display:flex; align-items:center; gap:5px;
+  padding:2px 6px; border-radius:3px;
+  font-family:var(--font-ui); font-size:11px; font-weight:600;
+  white-space:nowrap;
+}
+.trait-chip.bronze  { background:rgba(160,116,76,.15); color:#c09060; border:1px solid rgba(160,116,76,.3); }
+.trait-chip.silver  { background:rgba(168,184,200,.1);  color:#a8b8c8; border:1px solid rgba(168,184,200,.3); }
+.trait-chip.gold    { background:rgba(212,170,76,.15);  color:#d4aa4c; border:1px solid rgba(212,170,76,.35); }
+.trait-chip.chromatic { background:rgba(208,112,192,.15); color:#d090d0; border:1px solid rgba(208,112,192,.35); }
+.trait-chip .trait-count {
+  font-size:10px; font-weight:700;
+  background:rgba(0,0,0,.3); border-radius:2px; padding:0 3px;
+}
+
+/* ─── AUGMENT CHIPS ─── */
+.augment-list { display:flex; flex-wrap:wrap; gap:4px; }
+.augment-chip {
+  font-family:var(--font-ui); font-size:10px; font-weight:700;
+  padding:3px 8px; border-radius:3px;
+  background:var(--pur-dim); color:var(--pur-light);
+  border:1px solid var(--border-pur); letter-spacing:.3px;
+}
+
+/* ─── 모달 플레이어 행 ─── */
+.modal-player-row { border-bottom:1px solid #1a1830; }
+.modal-player-row:last-child { border-bottom:none; }
+.modal-player-row.me { background:rgba(138,99,210,.06); }
+.modal-player-row.top4-row { }
+
+/* ─── SMALL UNIT (모달용) ─── */
+.unit-sm {
+  position:relative; width:28px; height:28px;
+  border-radius:3px; overflow:hidden; flex-shrink:0;
+  border:1px solid rgba(255,255,255,.1);
+  cursor:default;
+}
+.unit-sm img { width:100%; height:100%; object-fit:cover; }
+.unit-sm .unit-sm-star {
+  position:absolute; bottom:0; left:0; right:0;
+  text-align:center; font-size:7px; line-height:1.4;
+  background:rgba(0,0,0,.6); color:#f0d060;
+}
+
+/* ─── BTN ─── */
+.btn-outline {
+  background:none; border:1px solid var(--border); border-radius:4px;
+  padding:8px 24px; color:var(--text-sub); cursor:pointer;
+  font-family:var(--font-ui); font-size:12px; font-weight:700;
+  letter-spacing:1px; transition:border-color .18s, color .18s;
+}
+.btn-outline:hover { border-color:var(--pur); color:var(--pur-light); }
+.btn-outline:disabled { opacity:.4; cursor:default; }
+
+/* ─── TOAST ─── */
+.toast {
+  position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+  background:#1a1630; border:1px solid var(--pur); border-radius:4px;
+  padding:10px 20px; font-family:var(--font-ui); font-size:13px;
+  color:var(--pur-light); z-index:9999; opacity:0;
+  transition:opacity .3s; pointer-events:none;
+}
+.toast.show { opacity:1; }
+
+/* ─── 반응형 ─── */
+@media (max-width: 800px) {
+  .userpage-wrap  { flex-direction:column; }
+  .sidebar        { width:100%; }
+  .trait-list     { display:none; }
+  .unit-list      { max-width:200px; }
+}
+  
+/* 증강 육각형 그리드 */
+.aug-grid { display:grid; grid-template-columns:repeat(3,24px); grid-template-rows:repeat(2,24px); gap:2px; flex-shrink:0; }
+.aug-hex { width:24px; height:24px; border-radius:4px; background:var(--bg4); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:9px; overflow:hidden; }
+.aug-hex img { width:100%; height:100%; object-fit:cover; display:block; }
+.item-chip { width:20px; height:20px; border-radius:3px; overflow:hidden; flex-shrink:0; border:1px solid rgba(255,255,255,.1); }
+.item-chip img { width:100%; height:100%; object-fit:cover; display:block; }
+</style>
+</head>
+<body>
+
+<!-- ═══ NAV ═══ -->
+<nav class="nav">
+  <a class="nav-logo" href="/Deai_main/">TFT</a>
+
+  <div class="nav-search-box" id="nav-search-box">
+    <input id="nav-name-input" type="text" placeholder="소환사명"
+           style="background:none;border:none;outline:none;padding:8px 10px;
+                  font-family:var(--font-ui);font-size:13px;color:var(--text-bright);flex:1;min-width:0;"
+           onkeydown="if(event.key==='Enter') navSearch()"/>
+    <span style="color:var(--text-muted);padding:0 4px;font-size:12px;">#</span>
+    <input id="nav-tag-input" type="text" placeholder="태그"
+           style="background:none;border:none;outline:none;padding:8px 8px;
+                  font-family:var(--font-ui);font-size:13px;color:var(--text-bright);width:68px;flex-shrink:0;"
+           onkeydown="if(event.key==='Enter') navSearch()"/>
+    <select id="nav-region-select"
+            style="background:var(--bg3);border:none;border-left:1px solid var(--border);
+                   outline:none;padding:8px 4px;font-family:var(--font-ui);font-size:12px;
+                   color:var(--text-sub);cursor:pointer;height:38px;flex-shrink:0;">
+      <option value="kr">KR</option>
+      <option value="na1">NA</option>
+      <option value="euw1">EUW</option>
+      <option value="eun1">EUNE</option>
+      <option value="jp1">JP</option>
+    </select>
+    <button onclick="navSearch()"
+            style="background:var(--pur);border:none;border-radius:0 4px 4px 0;
+                   width:42px;height:38px;cursor:pointer;display:flex;
+                   align-items:center;justify-content:center;flex-shrink:0;transition:background .18s;"
+            onmouseover="this.style.background='var(--pur-mid)'"
+            onmouseout="this.style.background='var(--pur)'">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" style="width:15px;height:15px;">
+        <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+      </svg>
+    </button>
+  </div>
+
+  <button class="nav-back" onclick="navigateTo('/RiotSearch/')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;">
+      <path d="M19 12H5M5 12l7-7M5 12l7 7"/>
+    </svg>
+    검색으로
+  </button>
+</nav>
+
+<!-- ═══ BODY ═══ -->
+<div class="page-wrapper">
+  <div class="userpage-wrap">
+
+    <!-- 사이드바 -->
+    <aside class="sidebar">
+
+      <!-- 프로필 카드 -->
+      <div class="card profile-card anim-1" id="profile-card">
+        <div class="state-box"><div class="spinner"></div><span class="msg">프로필 로딩 중...</span></div>
+      </div>
+
+      <!-- 랭크: 솔로 -->
+      <div class="card anim-2" id="rank-card-solo">
+        <div class="rank-card-header">랭크 (솔로)</div>
+        <div class="state-box" style="padding:24px;"><div class="spinner"></div></div>
+      </div>
+
+      <!-- 랭크: 더블업 -->
+      <div class="card anim-3" id="rank-card-double">
+        <div class="rank-card-header">더블업 랭크</div>
+        <div class="state-box" style="padding:20px;">
+          <span class="icon">🃏</span>
+          <span class="msg">랭크 정보 없음</span>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- 메인 -->
+    <main class="main-content">
+
+      <!-- 통계 요약 바 -->
+      <div class="card anim-2" id="stats-bar-wrap" style="display:none;">
+        <div class="stats-bar">
+          <div class="stats-bar-item">
+            <div class="stat-value" id="stat-games">—</div>
+            <div class="stat-label">최근 게임</div>
+          </div>
+          <div class="stats-bar-item">
+            <div class="stat-value" id="stat-top4" style="color:var(--pur-light)">—</div>
+            <div class="stat-label">TOP 4 율</div>
+          </div>
+          <div class="stats-bar-item">
+            <div class="stat-value" id="stat-avg" style="color:var(--gold)">—</div>
+            <div class="stat-label">평균 등수</div>
+          </div>
+          <div class="stats-bar-item">
+            <div class="stat-value" id="stat-win">—</div>
+            <div class="stat-label">1위 횟수</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 탭 카드 -->
+      <div class="card anim-3">
+        <div class="tab-bar">
+          <button class="tab-btn active" onclick="switchTab('matches', this)">전적</button>
+          <button class="tab-btn" onclick="switchTab('traits', this)">시너지 통계</button>
+          <button class="tab-btn" onclick="switchTab('augments', this)">증강 통계</button>
+        </div>
+
+        <!-- 전적 탭 -->
+        <div class="tab-content active" id="tab-matches">
+          <div id="match-list">
+            <div class="state-box"><div class="spinner"></div><span class="msg">전적 불러오는 중...</span></div>
+          </div>
+        </div>
+        <div style="text-align:center;padding:16px;display:none;" id="load-more-wrap">
+          <button class="btn-outline" id="load-more-btn" onclick="loadMoreMatches()">더 보기</button>
+        </div>
+
+        <!-- 시너지 통계 탭 -->
+        <div class="tab-content" id="tab-traits" style="padding:16px;">
+          <div id="trait-stats-wrap">
+            <div class="state-box"><div class="spinner"></div><span class="msg">집계 중...</span></div>
+          </div>
+        </div>
+
+        <!-- 증강 통계 탭 -->
+        <div class="tab-content" id="tab-augments" style="padding:16px;">
+          <div id="augment-stats-wrap">
+            <div class="state-box"><div class="spinner"></div><span class="msg">집계 중...</span></div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ═══ 매치 상세 모달 ═══ -->
+<div id="match-modal-overlay" onclick="closeMatchModal()"
+     style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.93);
+            z-index:9000;overflow-y:auto;padding:32px 16px;">
+  <div id="match-modal" onclick="event.stopPropagation()" style="
+      max-width:960px; margin:0 auto;
+      background:#09081a; border:1px solid #2a2440; border-radius:4px;
+      overflow:hidden; box-shadow:0 32px 80px rgba(0,0,0,.96);
+      border-top:2px solid var(--pur);">
+
+    <!-- 모달 헤더 -->
+    <div id="modal-header"
+         style="padding:14px 20px; border-bottom:1px solid #1e1c30; background:#0e0c1e;
+                display:flex; align-items:center; justify-content:space-between;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span id="modal-queue"    style="font-family:var(--font-ui);font-size:14px;font-weight:700;color:var(--pur-light);"></span>
+        <span id="modal-set"      style="font-family:var(--font-ui);font-size:12px;color:var(--text-muted);"></span>
+        <span id="modal-duration" style="font-family:var(--font-ui);font-size:12px;color:var(--text-sub);"></span>
+        <span id="modal-date"     style="font-family:var(--font-ui);font-size:11px;color:var(--text-muted);"></span>
+      </div>
+      <button onclick="closeMatchModal()"
+              style="background:none;border:none;font-size:20px;cursor:pointer;
+                     color:var(--text-muted);transition:color .15s;padding:4px 8px;"
+              onmouseover="this.style.color='var(--pur-light)'"
+              onmouseout="this.style.color='var(--text-muted)'">✕</button>
+    </div>
+
+    <!-- 모달 본문 -->
+    <div id="modal-body" style="padding:16px 20px;"></div>
+
+  </div>
+</div>
+
+<script>
+const DD_VERSION = '{{ DD_VERSION }}';
+const DD_IMG     = `https://ddragon.leagueoflegends.com/cdn/${DD_VERSION}/img`;
+
+// ── 상태 ─────────────────────────────────────────────
+let S = {
+  puuid       : '',
+  summonerId  : '',
+  region      : 'kr',
+  gameName    : '',
+  tagLine     : '',
+  iconId      : 1,
+  level       : 0,
+  matchData   : [],
+  traitData   : {},
+  augmentData : {},
+  _allMatchIds: [],
+  _loadedCount: 0,
+};
+
+// ── 초기화 ───────────────────────────────────────────
+function parseParams() {
+  const p = new URLSearchParams(location.search);
+  S.gameName    = p.get('name')        || '';
+  S.tagLine     = p.get('tag')         || '';
+  S.region      = p.get('region')      || 'kr';
+  S.puuid       = p.get('puuid')       || '';
+  S.summonerId  = p.get('summonerId')  || '';
+  S.iconId      = parseInt(p.get('iconId') || '1');
+  S.level       = parseInt(p.get('level')  || '0');
+  document.title = `${S.gameName} #${S.tagLine} — Deai × TFT`;
+  const rsel = document.getElementById('nav-region-select');
+  if (rsel) rsel.value = S.region;
+}
+
+async function tftAPI(path) {
+  const res  = await fetch(path);
+  const data = await res.json();
+  return data;
+}
+
+// ════════════════════════════════════════════════════
+// [1] 프로필 카드
+// ════════════════════════════════════════════════════
+function renderProfile() {
+  const iconUrl = `${DD_IMG}/profileicon/${S.iconId}.png`;
+  document.getElementById('profile-card').innerHTML = `
+    <div class="profile-backdrop"></div>
+    <div style="position:relative;z-index:1;text-align:center;padding:20px 16px 0;">
+      <div class="profile-icon" style="margin:0 auto;">
+        <img src="${iconUrl}" onerror="this.src='${DD_IMG}/profileicon/29.png'" alt="아이콘"/>
+      </div>
+      <div class="profile-level-badge">Lv. ${S.level}</div>
+    </div>
+    <div style="position:relative;z-index:1;text-align:center;margin-top:10px;padding-bottom:16px;">
+      <div class="profile-gamename">${esc(S.gameName)}</div>
+      <div class="profile-tagline">#${esc(S.tagLine)}</div>
+      <div style="margin-top:8px;">
+        <span style="display:inline-block;font-size:10px;font-weight:700;letter-spacing:1.5px;
+                     color:var(--pur-light);background:var(--pur-dim);
+                     border:1px solid var(--border-pur);border-radius:3px;padding:3px 10px;">
+          ${S.region.toUpperCase()}
+        </span>
+      </div>
+    </div>
+    <div style="position:relative;z-index:1;
+                font-family:var(--font-ui);font-size:10px;font-weight:700;letter-spacing:2px;
+                color:var(--text-muted);text-align:center;
+                padding:8px 0;border-top:1px solid var(--border);">
+      TFT PLAYER
+    </div>
+  `;
+}
+
+// ════════════════════════════════════════════════════
+// [2] 랭크 카드
+// ════════════════════════════════════════════════════
+async function loadRank() {
+  if (!S.summonerId && !S.puuid) {
+    setRankUnranked('rank-card-solo');
+    return;
+  }
+  const params = new URLSearchParams({ region: S.region });
+  if (S.summonerId) params.set('summonerId', S.summonerId);
+  if (S.puuid)      params.set('puuid',      S.puuid);
+  const data = await tftAPI(`/api/tft/rank/?${params.toString()}`);
+  if (!data.success) {
+    setRankUnranked('rank-card-solo');
+    return;
+  }
+
+  const solo   = data.ranks.find(r => r.queueType === 'RANKED_TFT');
+  const double = data.ranks.find(r => r.queueType === 'RANKED_TFT_DOUBLE_UP');
+
+  renderRankCard('rank-card-solo',   '랭크 (솔로)',   solo);
+  renderRankCard('rank-card-double', '더블업 랭크',   double);
+}
+
+function setRankUnranked(cardId) {
+  const el = document.getElementById(cardId);
+  el.innerHTML = `
+    <div class="rank-card-header">${cardId === 'rank-card-solo' ? '랭크 (솔로)' : '더블업 랭크'}</div>
+    <div class="state-box" style="padding:20px;">
+      <span class="icon">🏆</span>
+      <span class="msg">배치 미완료</span>
+    </div>`;
+}
+
+function renderRankCard(cardId, title, d) {
+  const el = document.getElementById(cardId);
+  if (!d) {
+    el.innerHTML = `
+      <div class="rank-card-header">${title}</div>
+      <div class="state-box" style="padding:20px;">
+        <span class="icon">🏆</span><span class="msg">배치 미완료</span>
+      </div>`;
+    return;
+  }
+
+  const wrColor = d.winRate >= 55 ? 'var(--pur-light)' : d.winRate <= 45 ? 'var(--text-muted)' : 'var(--text-bright)';
+  const topTiers = ['MASTER','GRANDMASTER','CHALLENGER'];
+  const showDiv  = !topTiers.includes(d.tier);
+
+  el.innerHTML = `
+    <div class="rank-card-header">${title}</div>
+    <div class="tier-main">
+      <div class="tier-emblem">
+        <img src="${d.emblemUrl}" alt="${d.tier}"
+             data-tier="${d.tier}"
+             onerror="if(!this.dataset.retry){this.dataset.retry='1';const t=this.dataset.tier.toLowerCase();this.src='https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-emblem/emblem-'+t+'.png';}else{this.style.opacity='.15';}"
+             style="width:64px;height:64px;object-fit:contain;
+                    filter:drop-shadow(0 2px 12px var(--pur-glow));"/>
+      </div>
+      <div class="tier-info">
+        <div class="tier-name">${d.tierKo}</div>
+        ${showDiv ? `<div class="tier-division">${d.rank}</div>` : ''}
+        <div class="tier-lp">${d.lp} <span>LP</span></div>
+      </div>
+    </div>
+    <div class="tier-stats-row">
+      <div class="tier-stat">
+        <div class="val">${d.wins + d.losses}</div>
+        <div class="lbl">게임</div>
+      </div>
+      <div class="tier-stat">
+        <div class="val" style="color:${wrColor}">${d.winRate}%</div>
+        <div class="lbl">TOP 4</div>
+      </div>
+      <div class="tier-stat">
+        <div class="val" style="color:var(--pur-light)">${d.wins}</div>
+        <div class="lbl">TOP 4 수</div>
+      </div>
+      <div class="tier-stat">
+        <div class="val" style="color:var(--text-muted)">${d.losses}</div>
+        <div class="lbl">BOT 4</div>
+      </div>
+    </div>
+    ${d.hotStreak ? `<div style="text-align:center;font-family:var(--font-ui);font-size:11px;
+        color:var(--gold);padding:8px 0;border-top:1px solid var(--border);">
+        🔥 Hot Streak</div>` : ''}
+  `;
+}
+
+// ════════════════════════════════════════════════════
+// [3] 매치 목록 초기 로드
+// ════════════════════════════════════════════════════
+const PAGE_SIZE = 10;
+
+async function initMatches() {
+  const ml = document.getElementById('match-list');
+  const idsData = await tftAPI(
+    `/api/tft/matches/?puuid=${encodeURIComponent(S.puuid)}&region=${S.region}&count=50`
+  );
+
+  if (!idsData.success || !idsData.matchIds?.length) {
+    ml.innerHTML = '<div class="state-box"><span class="icon">🎮</span><span class="msg">최근 게임 없음</span></div>';
+    return;
+  }
+
+  ml.innerHTML = '';
+  S._allMatchIds  = idsData.matchIds;
+  S._loadedCount  = 0;
+  await _loadBatch(ml, 0, PAGE_SIZE);
+
+  updateStatsBar();
+  renderTraitStats();
+  renderAugmentStats();
+}
+
+async function loadMoreMatches() {
+  const btn    = document.getElementById('load-more-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;margin:0 auto;"></div>';
+
+  const ml    = document.getElementById('match-list');
+  const start = S._loadedCount;
+  await _loadBatch(ml, start, PAGE_SIZE);
+
+  updateStatsBar();
+  renderTraitStats();
+  renderAugmentStats();
+
+  if (S._loadedCount >= S._allMatchIds.length) {
+    document.getElementById('load-more-wrap').style.display = 'none';
+  } else {
+    btn.disabled = false;
+    btn.innerHTML = '더 보기';
+  }
+}
+
+async function _loadBatch(ml, start, size) {
+  const batch = S._allMatchIds.slice(start, start + size);
+  if (!batch.length) return;
+
+  const details = await Promise.allSettled(
+    batch.map(id => tftAPI(`/api/tft/match/${encodeURIComponent(id)}/?region=${S.region}`))
+  );
+
+  details.forEach(r => {
+    if (r.status === 'fulfilled' && r.value.success) {
+      const card = buildMatchCard(r.value.match);
+      if (card) {
+        ml.appendChild(card);
+        S.matchData.push(r.value.match);
+        accumTraits(r.value.match);
+        accumAugments(r.value.match);
+      }
+    }
+  });
+
+  S._loadedCount = start + size;
+  if (S._loadedCount < S._allMatchIds.length) {
+    document.getElementById('load-more-wrap').style.display = 'block';
+    const btn = document.getElementById('load-more-btn');
+    btn.disabled = false;
+    btn.innerHTML = '더 보기';
+  }
+}
+
+// ════════════════════════════════════════════════════
+// [4] 매치 카드
+// ════════════════════════════════════════════════════
+function buildMatchCard(match) {
+  if (!match?.matchInfo) return null;
+  const info  = match.matchInfo;
+  const parts = match.participants || [];
+  const me    = parts.find(p => p.puuid === S.puuid);
+  if (!me) return null;
+
+  const placement = me.placement;
+  const isTop4    = placement <= 4;
+  const pColor    = placementColor(placement);
+
+  // 시간 정보
+  const durMin  = Math.floor((info.gameLength || 0) / 60);
+  const durSec  = String((info.gameLength || 0) % 60).padStart(2, '0');
+  const timeAgo = timeSince(Math.round((info.gameDate || 0) / 1000));
+  const queueLabel = info.queueName || 'standard';
+
+  // ── 증강 아이콘 그리드 (최대 5개, lolchess 스타일)
+  const augs = me.augments.slice(0, 5);
+  const augGridHtml = augs.map(a => {
+    const imgUrl = augIconUrl(a.name);
+    return `<div class="aug-hex" title="${esc(a.name)}">
+      <img src="${imgUrl}" loading="lazy"
+           onerror="this.parentElement.innerHTML='<span style=font-size:8px;color:var(--text-muted);padding:2px>${esc(a.name.slice(0,2))}</span>'"
+           alt="${esc(a.name)}"/>
+    </div>`;
+  }).join('');
+  // 빈 슬롯 채우기 (최소 그리드 유지)
+  const emptyAugSlots = Math.max(0, 3 - augs.length);
+  const emptyAugs = Array(emptyAugSlots).fill('<div class="aug-hex"></div>').join('');
+
+  // ── 유닛 칩 (최대 9개)
+  const mainUnits = me.units.slice(0, 9);
+  const unitHtml  = mainUnits.map(u => buildUnitChip(u, 38)).join('');
+
+  // ── 아이템 줄 (유닛별 아이템)
+  const allItems = [];
+  me.units.forEach(u => {
+    (u.items || []).forEach(itemId => allItems.push({ itemId, unitName: u.name }));
+  });
+  const itemHtml = allItems.slice(0, 9).map(item => {
+    const url = itemIconUrl(item.itemId);
+    return `<div class="item-chip" title="${esc(item.unitName)}">
+      <img src="${url}" loading="lazy" onerror="this.style.opacity='.2'" alt="item"/>
+    </div>`;
+  }).join('');
+
+  // ── 시너지 배지 (최대 4개, 활성화된 것)
+  const traitHtml = me.traits.slice(0, 4).map(t =>
+    `<div class="trait-chip ${t.styleName}">
+      <span class="trait-count">${t.numUnits}</span>
+      <span>${esc(traitDisplayName(t.name))}</span>
+    </div>`
+  ).join('');
+
+  // ── 플레이어 목록 (8명 2열)
+  const sortedParts = [...parts].sort((a,b) => a.placement - b.placement);
+  const playerHtml = sortedParts.map(p => {
+    const isMe = p.puuid === S.puuid;
+    return `<div class="player-item${isMe ? ' me' : ''}">
+      ${isMe ? '▶ ' : ''}${esc(p.riotIdGameName || '—')}
+    </div>`;
+  }).join('');
+
+  const div = document.createElement('div');
+  div.className = `match-card ${isTop4 ? 'top4' : 'bot4'}`;
+  div.addEventListener('click', () => openMatchModal(match));
+
+  div.innerHTML = `
+    <!-- 헤더 바 -->
+    <div class="match-header">
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span class="placement-num" style="color:${pColor};font-size:22px;font-weight:800;font-family:var(--font-ui);line-height:1;">#${placement}</span>
+        <span style="font-family:var(--font-ui);font-size:11px;font-weight:700;
+                     color:${isTop4 ? 'var(--pur-light)' : 'var(--text-muted)'};letter-spacing:.3px;">${esc(queueLabel)}</span>
+      </div>
+      <span style="color:var(--text-muted);">|</span>
+      <span style="font-family:var(--font-ui);font-size:11px;color:var(--text-muted);">${durMin}:${durSec}</span>
+      <span style="font-family:var(--font-ui);font-size:11px;color:var(--text-muted);">${timeAgo}</span>
+    </div>
+
+    <!-- 바디 -->
+    <div class="match-body">
+      <!-- 전술가(Companion) 이미지 -->
+      ${(()=>{
+        const compUrl = me.companionImgUrl || '';
+        const fallback = 'https://ddragon.leagueoflegends.com/cdn/14.1.1/img/profileicon/' + (me.profileIconId||29) + '.png';
+        const imgSrc = compUrl || fallback;
+        return `<div style="flex-shrink:0;width:52px;height:52px;border-radius:8px;overflow:hidden;
+                    border:2px solid ${pColor};position:relative;background:var(--bg4);">
+          <img src="${imgSrc}"
+               style="width:100%;height:100%;object-fit:cover;object-position:center top;"
+               onerror="this.src='${fallback}'" alt=""/>
+          <div style="position:absolute;bottom:-1px;right:-1px;background:${pColor};
+                      color:#111;font-size:9px;font-weight:800;font-family:var(--font-ui);
+                      width:16px;height:16px;border-radius:50%;display:flex;
+                      align-items:center;justify-content:center;">${placement}</div>
+        </div>`;
+      })()}
+
+      <!-- 증강 그리드 -->
+      <div class="aug-grid" style="grid-template-columns:repeat(3,24px);grid-template-rows:repeat(2,24px);">
+        ${augGridHtml}${emptyAugs}
+      </div>
+
+      <!-- 유닛 + 아이템 -->
+      <div style="flex:1;min-width:0;">
+        <div class="unit-list" style="margin-bottom:3px;">${unitHtml}</div>
+        ${itemHtml ? `<div style="display:flex;flex-wrap:wrap;gap:2px;">${itemHtml}</div>` : ''}
+      </div>
+
+      <!-- 시너지 -->
+      <div class="trait-list">${traitHtml}</div>
+
+      <!-- 플레이어 목록 -->
+      <div class="player-list">${playerHtml}</div>
+    </div>
+  `;
+  return div;
+}
+
+function augIconUrl(augName) {
+  // 증강 이름 → CDragon augment icon
+  const slug = augName.toLowerCase()
+    .replace(/[^a-z0-9]/g, '')
+    .replace(/^tft16augment/, '');
+  return `https://raw.communitydragon.org/latest/game/assets/maps/particles/tft/augments/tft16/${slug}.tft_set16.png`;
+}
+
+function itemIconUrl(itemId) {
+  return `https://raw.communitydragon.org/latest/game/assets/maps/particles/tft/item_icons/standard/hexcore/tft_item_${String(itemId).padStart(4,'0')}.tft_set16.png`;
+}
+
+function buildUnitChip(u, size) {
+  const costClass = `unit-cost-${Math.min(u.rarity + 1, 5)}`;
+  const stars     = '★'.repeat(Math.min(u.tier, 3));
+  const imgUrl    = unitIconUrl(u.characterId);
+  const itemsTip  = u.itemNames.join(', ');
+  const charIdAttr = esc(u.characterId || '');
+  return `
+    <div class="unit-chip" title="${esc(u.name)} ${stars}${itemsTip ? '\n아이템: ' + itemsTip : ''}"
+         style="width:${size}px;height:${size}px;">
+      <img src="${imgUrl}" loading="lazy"
+           data-charid="${charIdAttr}"
+           onerror="if(this.dataset.retry==='1'){this.style.opacity='.2';}else{this.dataset.retry='1';const id=this.dataset.charid.toLowerCase();this.src='https://raw.communitydragon.org/latest/game/assets/characters/'+id+'/hud/'+id+'_square.tft.png';}"
+           alt="${esc(u.name)}"/>
+      <div class="unit-cost ${costClass}"></div>
+      ${u.tier >= 2 ? `<div class="unit-star" style="color:${u.tier===3?'#f0d060':'#d0d0d0'}">${stars}</div>` : ''}
+    </div>`;
+}
+
+function unitIconUrl(characterId) {
+  if (!characterId) return '';
+  const id = characterId.toLowerCase();
+
+  // 1순위: CommunityDragon - /hud/ 경로 (set 번호 포함 suffix 자동 탐색)
+  // TFT16_Ahri → tft16_ahri → .tft_set16.png 또는 .tft.png
+  const setMatch = id.match(/^tft(\d+)_/);
+  const setNum   = setMatch ? setMatch[1] : null;
+  const suffix   = setNum ? `tft_set${setNum}` : 'tft';
+  return `https://raw.communitydragon.org/latest/game/assets/characters/${id}/hud/${id}_square.${suffix}.png`;
+}
+
+function unitIconUrlFallback(img, characterId) {
+  // 2순위: .tft.png suffix
+  const id = characterId.toLowerCase();
+  const s1 = `https://raw.communitydragon.org/latest/game/assets/characters/${id}/hud/${id}_square.tft.png`;
+  // 3순위: DD 프로필 아이콘 (placeholder)
+  const s2 = `${DD_IMG}/profileicon/29.png`;
+
+  if (img.src !== s1) { img.src = s1; return; }
+  img.src = s2;
+}
+
+// TFT Set16 전체 트레이트 한국어 매핑
+// 내부 ID (rawName) → 한국어 표시명
+// Riot API 반환 name 형식: "TFT16_Warden", "TFT16_ShadowIsles" 등
+// ── CommunityDragon 공식 한국어 매핑 (Set16) ──────────
+// source: raw.communitydragon.org/latest/cdragon/tft/ko_kr.json
+const TFT_TRAIT_KO = {
+  // Origins
+  'TFT16_Bilgewater'      : '빌지워터',
+  'TFT16_Demacia'         : '데마시아',
+  'TFT16_Freljord'        : '프렐요드',
+  'TFT16_Ionia'           : '아이오니아',
+  'TFT16_Explorer'        : '이쉬탈',
+  'TFT16_Noxus'           : '녹서스',
+  'TFT16_Piltover'        : '필트오버',
+  'TFT16_ShadowIsles'     : '그림자 군도',
+  'TFT16_Shurima'         : '슈리마',
+  'TFT16_Targon'          : '타곤',
+  'TFT16_Void'            : '공허',
+  'TFT16_Yordle'          : '요들',
+  'TFT16_Zaun'            : '자운',
+  // Classes
+  'TFT16_Sorcerer'        : '비전 마법사',
+  'TFT16_Brawler'         : '난동꾼',
+  'TFT16_Defender'        : '엄호대',
+  'TFT16_Magus'           : '방해꾼',
+  'TFT16_Gunslinger'      : '총잡이',
+  'TFT16_Invoker'         : '기원자',
+  'TFT16_Juggernaut'      : '전쟁기계',
+  'TFT16_Longshot'        : '원거리 사격',
+  'TFT16_Rapidfire'       : '기동타격대',
+  'TFT16_Slayer'          : '학살자',
+  'TFT16_Vanquisher'      : '토벌자',
+  'TFT16_Warden'          : '파수꾼',
+  'TFT16_RuneMage'        : '룬 마법사',
+  'TFT16_Soulbound'       : '영혼결속자',
+  'TFT16_DarkinWeapon'    : '다르킨',
+  'TFT16_TheBoss'         : '우두머리',
+  // Unique/Special
+  'TFT16_XerathUnique'    : '초월체',
+  'TFT16_AurelionSolUnique':'별의 창조자',
+  'TFT16_ShyvanaUnique'   : '용족',
+  'TFT16_SylasTrait'      : '사슬파괴자',
+  'TFT16_KindredUnique'   : '영겁',
+  'TFT16_DarkChild'       : '어둠의 아이',
+  'TFT16_AatroxUnique'    : '세계의 종결자',
+  'TFT16_KaisaUnique'     : '흡수자',
+  'TFT16_Caretaker'       : '관리인',
+  'TFT16_Emperor'         : '황제',
+  'TFT16_HexMech'         : '마법공학기계',
+  'TFT16_Glutton'         : '대식가',
+  'TFT16_Blacksmith'      : '대장장이',
+  'TFT16_Harvester'       : '수확자',
+  'TFT16_ZaahenTrait'     : '불멸자',
+  'TFT16_Heroic'          : '영웅',
+  'TFT16_Chronokeeper'    : '시간의 수호자',
+  'TFT16_Huntress'        : '여사냥꾼',
+  'TFT16_BaronUnique'     : '균열의 재앙',
+  // Teamup
+  'TFT16_Teamup_SingedTeemo'    : '독성 친구들',
+  'TFT16_Teamup_AmbessaKindred' : '선택받은 늑대',
+  'TFT16_Teamup_EkkoZilean'     : '시간의 톱니바퀴',
+  'TFT16_Teamup_JarvanShyvana'  : '용 감시단',
+  'TFT16_Teamup_LucianVayne'    : '빛의 감시자',
+};
+
+function traitDisplayName(rawName) {
+  if (!rawName) return '';
+  // 1순위: 직접 매핑
+  if (TFT_TRAIT_KO[rawName]) return TFT_TRAIT_KO[rawName];
+  // 2순위: prefix 제거 후 평문 ID 반환 (미매핑 시 영어로)
+  return rawName
+    .replace(/^TFT\d+_Teamup_/i, '')
+    .replace(/^TFT\d+_/i, '')
+    .replace(/^Set\d+_Trait_/i, '')
+    .replace(/^Set\d+_/i, '');
+}
+
+function shortTraitName(name) {
+  return traitDisplayName(name);
+}
+
+function placementColor(p) {
+  if (p === 1) return 'var(--top1)';
+  if (p === 2) return 'var(--top2)';
+  if (p === 3) return 'var(--top3)';
+  if (p <= 4)  return 'var(--top4)';
+  return 'var(--text-muted)';
+}
+
+// ════════════════════════════════════════════════════
+// [5] 통계 바
+// ════════════════════════════════════════════════════
+function updateStatsBar() {
+  const all = S.matchData;
+  if (!all.length) return;
+
+  let top4 = 0, wins = 0, sumPlacement = 0, total = 0;
+  all.forEach(m => {
+    const me = m.participants?.find(p => p.puuid === S.puuid);
+    if (!me) return;
+    total++;
+    sumPlacement += me.placement;
+    if (me.placement <= 4) top4++;
+    if (me.placement === 1) wins++;
+  });
+  if (!total) return;
+
+  const top4Rate = Math.round(top4 / total * 100);
+  const avg      = (sumPlacement / total).toFixed(2);
+
+  document.getElementById('stat-games').textContent = `${total}게임`;
+  document.getElementById('stat-top4').textContent  = `${top4Rate}%`;
+  document.getElementById('stat-avg').textContent   = avg;
+  document.getElementById('stat-win').textContent   = `${wins}회`;
+  document.getElementById('stats-bar-wrap').style.display = 'block';
+}
+
+// ════════════════════════════════════════════════════
+// [6] 시너지 통계 누적 + 렌더링
+// ════════════════════════════════════════════════════
+// unique/1인 트레이트 제외 집합 (API에서 걸러지지만 이중 보호)
+const SKIP_TRAITS = new Set([
+  'TFT16_SylasTrait','TFT16_ShyvanaUnique','TFT16_KaisaUnique',
+  'TFT16_XerathUnique','TFT16_KindredUnique','TFT16_ZaahenTrait',
+  'TFT16_Heroic','TFT16_Blacksmith','TFT16_DarkChild',
+  'TFT16_Emperor','TFT16_Caretaker','TFT16_Glutton',
+  'TFT16_Huntress','TFT16_HexMech','TFT16_Harvester',
+  'TFT16_Chronokeeper','TFT16_DarkinWeapon',
+]);
+
+function accumTraits(match) {
+  const me = match.participants?.find(p => p.puuid === S.puuid);
+  if (!me) return;
+  me.traits.forEach(t => {
+    if (SKIP_TRAITS.has(t.name)) return;
+    if (t.style <= 0 || t.tierTotal <= 0) return;
+    if (!S.traitData[t.name]) S.traitData[t.name] = { games:0, sumPlacement:0, top4:0, maxStyle:0 };
+    const d = S.traitData[t.name];
+    d.games++;
+    d.sumPlacement += me.placement;
+    if (me.placement <= 4) d.top4++;
+    d.maxStyle = Math.max(d.maxStyle, t.style);
+  });
+}
+
+function renderTraitStats() {
+  const wrap = document.getElementById('trait-stats-wrap');
+  const sorted = Object.entries(S.traitData)
+    .sort((a, b) => b[1].games - a[1].games)
+    .slice(0, 20);
+
+  if (!sorted.length) {
+    wrap.innerHTML = '<div class="state-box"><span class="msg">데이터 없음</span></div>';
+    return;
+  }
+
+  const rows = sorted.map(([name, d]) => {
+    const top4Rate = Math.round(d.top4 / d.games * 100);
+    const avgPlace = (d.sumPlacement / d.games).toFixed(2);
+    const styleName = _trait_style_name(d.maxStyle);
+    const color = styleName === 'chromatic' ? 'var(--trait-chromatic)'
+                : styleName === 'gold'     ? 'var(--trait-gold)'
+                : styleName === 'silver'   ? 'var(--trait-silver)'
+                : 'var(--trait-bronze)';
+    return `<tr>
+      <td style="padding:8px 12px;">
+        <span style="font-family:var(--font-ui);font-size:13px;font-weight:700;
+                     color:${color};">${esc(traitDisplayName(name))}</span>
+      </td>
+      <td style="text-align:center;font-family:var(--font-ui);padding:8px;">${d.games}</td>
+      <td style="text-align:center;padding:8px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="flex:1;height:6px;background:var(--bg4);border-radius:3px;">
+            <div style="height:100%;width:${top4Rate}%;background:var(--pur);border-radius:3px;"></div>
+          </div>
+          <span style="font-family:var(--font-ui);font-size:12px;min-width:34px;
+                       color:${top4Rate >= 60 ? 'var(--pur-light)' : 'var(--text-sub)'};">${top4Rate}%</span>
+        </div>
+      </td>
+      <td style="text-align:center;font-family:var(--font-ui);font-weight:700;
+                 color:var(--gold);padding:8px;">${avgPlace}</td>
+    </tr>`;
+  }).join('');
+
+  wrap.innerHTML = `
+    <table style="width:100%;border-collapse:collapse;">
+      <thead>
+        <tr style="font-family:var(--font-ui);font-size:11px;color:var(--text-muted);
+                   letter-spacing:1px;background:var(--bg3);font-weight:700;">
+          <th style="text-align:left;padding:8px 12px;">시너지</th>
+          <th style="text-align:center;padding:8px;">게임</th>
+          <th style="padding:8px;">TOP4 율</th>
+          <th style="text-align:center;padding:8px;">평균 등수</th>
+        </tr>
+      </thead>
+      <tbody style="font-size:13px;">${rows}</tbody>
+    </table>`;
+}
+
+function _trait_style_name(style) {
+  return ['','bronze','silver','gold','chromatic'][Math.min(style, 4)];
+}
+
+// ════════════════════════════════════════════════════
+// [7] 증강 통계 누적 + 렌더링
+// ════════════════════════════════════════════════════
+function accumAugments(match) {
+  const me = match.participants?.find(p => p.puuid === S.puuid);
+  if (!me) return;
+  me.augments.forEach(a => {
+    if (!S.augmentData[a.name]) S.augmentData[a.name] = { games:0, sumPlacement:0, top4:0 };
+    const d = S.augmentData[a.name];
+    d.games++;
+    d.sumPlacement += me.placement;
+    if (me.placement <= 4) d.top4++;
+  });
+}
+
+function renderAugmentStats() {
+  const wrap   = document.getElementById('augment-stats-wrap');
+  const sorted = Object.entries(S.augmentData)
+    .sort((a, b) => b[1].games - a[1].games)
+    .slice(0, 20);
+
+  if (!sorted.length) {
+    wrap.innerHTML = '<div class="state-box"><span class="msg">데이터 없음</span></div>';
+    return;
+  }
+
+  const rows = sorted.map(([name, d]) => {
+    const top4Rate = Math.round(d.top4 / d.games * 100);
+    const avgPlace = (d.sumPlacement / d.games).toFixed(2);
+    const t4Color  = top4Rate >= 60 ? 'var(--pur-light)' : top4Rate <= 40 ? 'var(--text-muted)' : 'var(--text-bright)';
+    return `<tr style="border-bottom:1px solid var(--border);">
+      <td style="padding:10px 12px;">
+        <span class="augment-chip">${esc(name)}</span>
+      </td>
+      <td style="text-align:center;font-family:var(--font-ui);padding:10px 8px;">${d.games}</td>
+      <td style="text-align:center;font-family:var(--font-ui);font-weight:700;
+                 color:${t4Color};padding:10px 8px;">${top4Rate}%</td>
+      <td style="text-align:center;font-family:var(--font-ui);font-weight:700;
+                 color:var(--gold);padding:10px 8px;">${avgPlace}</td>
+    </tr>`;
+  }).join('');
+
+  wrap.innerHTML = `
+    <table style="width:100%;border-collapse:collapse;">
+      <thead>
+        <tr style="font-family:var(--font-ui);font-size:11px;color:var(--text-muted);
+                   letter-spacing:1px;background:var(--bg3);font-weight:700;">
+          <th style="text-align:left;padding:8px 12px;">증강</th>
+          <th style="text-align:center;padding:8px;">게임</th>
+          <th style="text-align:center;padding:8px;">TOP4 율</th>
+          <th style="text-align:center;padding:8px;">평균 등수</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+// ════════════════════════════════════════════════════
+// [8] 매치 상세 모달
+// ════════════════════════════════════════════════════
+function openMatchModal(match) {
+  const info  = match.matchInfo;
+  const parts = match.participants;
+
+  const durMin = Math.floor((info.gameLength || 0) / 60);
+  const durSec = String((info.gameLength || 0) % 60).padStart(2, '0');
+  const dateStr = new Date(info.gameDate).toLocaleDateString('ko-KR',
+    {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'});
+
+  document.getElementById('modal-queue').textContent    = info.queueName || 'standard';
+  document.getElementById('modal-set').textContent      = info.tftSetCoreName || `Set ${info.tftSetNumber}`;
+  document.getElementById('modal-duration').textContent = `${durMin}:${durSec}`;
+  document.getElementById('modal-date').textContent     = dateStr;
+
+  // 참가자 테이블 (등수 순, lolchess 스타일)
+  const rows = parts.map(p => {
+    const isMe     = p.puuid === S.puuid;
+    const pColor   = placementColor(p.placement);
+    const isTop4   = p.placement <= 4;
+
+    // 유닛 칩 (최대 9개, 38px)
+    const unitHtml = p.units.slice(0, 9).map(u => buildUnitChip(u, 34)).join('');
+
+    // 시너지 배지 (최대 3개 - 활성화된 것만)
+    const traitHtml = p.traits.slice(0, 3).map(t =>
+      `<div class="trait-chip ${t.styleName}" style="font-size:10px;height:18px;padding:0 5px 0 4px;">
+        <span class="trait-count" style="font-size:10px;">${t.numUnits}</span>
+        <span>${esc(traitDisplayName(t.name))}</span>
+      </div>`
+    ).join('');
+
+    // 증강 아이콘 (소형)
+    const augHtml = p.augments.slice(0, 3).map(a => {
+      const imgUrl = augIconUrl(a.name);
+      return `<div style="width:22px;height:22px;border-radius:3px;overflow:hidden;
+                          background:var(--bg4);border:1px solid var(--border);flex-shrink:0;"
+                   title="${esc(a.name)}">
+        <img src="${imgUrl}" style="width:100%;height:100%;object-fit:cover;"
+             onerror="this.parentElement.style.display='none'" loading="lazy"/>
+      </div>`;
+    }).join('');
+
+    // 업적 (골드/처치/피해)
+    const goldGained   = p.stats?.goldLeft || 0;
+    const playersElim  = p.stats?.playersEliminated || 0;
+    const totalDamage  = p.stats?.totalDamage || 0;
+
+    return `<tr class="modal-player-row${isMe ? ' me' : ''}${isTop4 ? ' top4-row' : ''}">
+      <!-- # 등수 -->
+      <td style="padding:10px 10px;text-align:center;width:36px;border-right:1px solid var(--border);">
+        <span style="font-family:var(--font-ui);font-size:20px;font-weight:800;
+                     color:${pColor};line-height:1;">${p.placement}</span>
+      </td>
+      <!-- 플레이어 -->
+      <td style="padding:8px 10px;min-width:120px;">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <img src="${p.companionImgUrl || ('https://ddragon.leagueoflegends.com/cdn/14.1.1/img/profileicon/' + (p.profileIconId||29) + '.png')}"
+               style="width:28px;height:28px;border-radius:4px;border:1.5px solid ${pColor};object-fit:cover;object-position:center top;"
+               onerror="this.src='https://ddragon.leagueoflegends.com/cdn/14.1.1/img/profileicon/${p.profileIconId||29}.png'" loading="lazy"/>
+          <div>
+            <div style="font-family:var(--font-ui);font-size:12px;font-weight:700;
+                        color:${isMe ? 'var(--pur-light)' : 'var(--text-bright)'};">
+              ${esc(p.riotIdGameName || '—')}${isMe ? ' <span style="font-size:9px;color:var(--pur)">▶ 나</span>' : ''}
+            </div>
+            <div style="font-size:10px;color:var(--text-muted);">Lv.${p.level} · R.${p.lastRound}</div>
+          </div>
+        </div>
+      </td>
+      <!-- 라운드 -->
+      <td style="padding:8px 10px;text-align:center;width:60px;font-family:var(--font-ui);font-size:11px;color:var(--text-sub);">
+        ${p.lastRound}
+      </td>
+      <!-- 시너지 -->
+      <td style="padding:6px 8px;width:220px;">
+        <div style="display:flex;flex-wrap:wrap;gap:3px;">${traitHtml}</div>
+      </td>
+      <!-- 유닛 -->
+      <td style="padding:6px 8px;">
+        <div style="display:flex;flex-wrap:wrap;gap:2px;">${unitHtml}</div>
+      </td>
+      <!-- 증강 -->
+      <td style="padding:6px 8px;width:90px;">
+        <div style="display:flex;gap:3px;flex-wrap:wrap;">${augHtml}</div>
+      </td>
+      <!-- 업적 -->
+      <td style="padding:8px 10px;text-align:right;font-family:var(--font-ui);font-size:11px;
+                 white-space:nowrap;min-width:60px;">
+        ${goldGained > 0 ? `<div style="color:var(--gold);">🪙 ${goldGained}</div>` : ''}
+        ${playersElim > 0 ? `<div style="color:var(--text-sub);">🗡 ${playersElim}</div>` : ''}
+        <div style="color:${totalDamage>=150?'var(--pur-light)':totalDamage>=80?'var(--text-bright)':'var(--text-sub)'};">
+          🔥 ${totalDamage}
+        </div>
+        <div style="font-size:9px;color:var(--text-muted);">피해</div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('modal-body').innerHTML = `
+    <table style="width:100%;border-collapse:collapse;">
+      <thead>
+        <tr style="font-family:var(--font-ui);font-size:10px;color:var(--text-muted);
+                   letter-spacing:.8px;background:rgba(0,0,0,.3);font-weight:700;
+                   text-transform:uppercase;border-bottom:1px solid var(--border);">
+          <th style="padding:6px 10px;text-align:center;">#</th>
+          <th style="padding:6px 10px;text-align:left;">플레이어</th>
+          <th style="padding:6px 10px;text-align:center;">라운드</th>
+          <th style="padding:6px 8px;text-align:left;">시너지</th>
+          <th style="padding:6px 8px;text-align:left;">유닛</th>
+          <th style="padding:6px 8px;text-align:left;">증강</th>
+          <th style="padding:6px 10px;text-align:right;">피해</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+
+  document.getElementById('match-modal-overlay').style.display = 'block';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeMatchModal() {
+  document.getElementById('match-modal-overlay').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+// ════════════════════════════════════════════════════
+// 네브바 검색
+// ════════════════════════════════════════════════════
+async function navSearch() {
+  const name   = document.getElementById('nav-name-input').value.trim();
+  const tag    = document.getElementById('nav-tag-input').value.trim();
+  const region = document.getElementById('nav-region-select').value;
+  if (!name) { document.getElementById('nav-name-input').focus(); return; }
+
+  const searchTag = tag || region.replace(/[0-9]/g, '').toUpperCase();
+
+  let overlay = document.getElementById('goto-loading');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'goto-loading';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;';
+    document.body.appendChild(overlay);
+  }
+  overlay.innerHTML = `
+    <div class="spinner" style="width:40px;height:40px;border-width:3px;border-top-color:var(--pur);"></div>
+    <div style="font-family:var(--font-ui);font-size:13px;color:var(--text-sub);">
+      <span style="color:var(--pur-light);font-weight:700;">${esc(name)}</span> 전적 조회 중...
+    </div>`;
+
+  try {
+    const data = await tftAPI(
+      `/api/tft/account/?name=${encodeURIComponent(name)}&tag=${encodeURIComponent(searchTag)}&region=${region}`
+    );
+    if (!data?.success) {
+      const o = document.getElementById('goto-loading');
+      if (o) o.remove();
+      showToast(data?.message || '플레이어를 찾을 수 없습니다.');
+      return;
+    }
+    const params = new URLSearchParams({
+      name: data.gameName, tag: data.tagLine,
+      region, puuid: data.puuid,
+      summonerId: data.summonerId,
+      iconId: data.profileIconId,
+      level: data.summonerLevel,
+    });
+    window.location.href = `/riot/tft/user/?${params.toString()}`;
+  } catch (e) {
+    const o = document.getElementById('goto-loading');
+    if (o) o.remove();
+  }
+}
+
+// ════════════════════════════════════════════════════
+// 공통 유틸
+// ════════════════════════════════════════════════════
+function switchTab(tabId, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(`tab-${tabId}`).classList.add('active');
+}
+
+function timeSince(ts) {
+  const s = Math.floor(Date.now() / 1000 - ts);
+  if (s < 3600)   return `${Math.floor(s / 60)}분 전`;
+  if (s < 86400)  return `${Math.floor(s / 3600)}시간 전`;
+  if (s < 604800) return `${Math.floor(s / 86400)}일 전`;
+  return new Date(ts * 1000).toLocaleDateString('ko-KR');
+}
+
+function navigateTo(url) {
+  document.body.style.transition = 'opacity .3s, transform .3s';
+  document.body.style.opacity    = '0';
+  document.body.style.transform  = 'translateY(-8px)';
+  setTimeout(() => location.href = url, 280);
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function esc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ════════════════════════════════════════════════════
+// 진입점
+// ════════════════════════════════════════════════════
+async function init() {
+  parseParams();
+  if (!S.puuid) { location.href = '/RiotSearch/'; return; }
+  renderProfile();
+  await Promise.allSettled([
+    loadRank(),
+    initMatches(),
+  ]);
+}
+init();
+</script>
+
+<script>
+window.addEventListener('pageshow', (e) => {
+  const overlay = document.getElementById('goto-loading');
+  if (overlay) overlay.remove();
+  if (e.persisted) {
+    document.body.style.opacity   = '1';
+    document.body.style.transform = 'none';
+  }
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMatchModal(); });
+</script>
+</body>
+</html>
