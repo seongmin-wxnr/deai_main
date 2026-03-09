@@ -52,10 +52,10 @@ def _companion_img_url(content_id: str) -> str:
     return _COMPANION_CACHE.get(content_id, '')
 
 TFT_QUEUE_KO = {
-    'RANKED_TFT'           : '랭크',
-    'RANKED_TFT_TURBO'     : '하이퍼롤',
-    'NORMAL_TFT'           : '일반',
-    'RANKED_TFT_PAIRS'     : '듀오전',
+    'RANKED_TFT': '랭크',
+    'RANKED_TFT_TURBO': '하이퍼롤',
+    'NORMAL_TFT'  : '일반',
+    'RANKED_TFT_PAIRS' : '듀오전',
     'RANKED_TFT_DOUBLE_UP' : '더블업',
 }
 
@@ -116,11 +116,11 @@ def _riot_get(url: str) -> dict:
     req = urllib.request.Request(
         url,
         headers={
-            'X-Riot-Token'   : settings.RIOT_API_KEY,
-            'User-Agent'     : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+            'X-Riot-Token': settings.RIOT_API_KEY,
+            'User-Agent' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
             'Accept-Language': 'ko-KR,ko;q=0.9',
-            'Accept-Charset' : 'application/x-www-form-urlencoded; charset=UTF-8',
-            'Origin'         : 'https://developer.riotgames.com',
+            'Accept-Charse' : 'application/x-www-form-urlencoded; charset=UTF-8',
+            'Origin' : 'https://developer.riotgames.com',
         }
     )
     print(f"[TFT DEBUG] -> {url}", flush=True)
@@ -161,9 +161,9 @@ def tft_api_search_account(request):
     if request.method != 'GET':
         return JsonResponse({'success': False, 'message': '잘못된 메서드입니다.'}, status=405)
 
-    name   = request.GET.get('name',   '').strip()
-    tag    = request.GET.get('tag',    '').strip()
-    region = request.GET.get('region', 'kr').strip().lower()
+    name= request.GET.get('name','').strip()
+    tag = request.GET.get('tag',  '').strip()
+    region = request.GET.get('region','kr').strip().lower()
 
     if not name or not tag:
         return JsonResponse({'success': False, 'message': '이름과 태그를 입력해주세요.'}, status=400)
@@ -417,4 +417,5 @@ def tft_api_matchDetail(request, match_id):
         return _handle_error(e)
     except Exception as e:
         print(f"[TFT] match detail 예외: {e}", flush=True)
+
         return JsonResponse({'success': False, 'message': str(e)}, status=200)
