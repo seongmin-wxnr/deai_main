@@ -155,17 +155,20 @@ EMAIL_HOST_USER     = ''   # ← 본인 Gmail 주소로 변경
 EMAIL_HOST_PASSWORD = ''      # ← Gmail 앱 비밀번호로 변경
 DEFAULT_FROM_EMAIL  = EMAIL_HOST_USER
 
-# 초기 정의 -> riot api
+# 초기 정의 -> riot api -> valorant
 RIOT_REGION_MAP = {
-    'kr':   {'platform': 'kr.api.riotgames.com',   'regional': 'asia.api.riotgames.com'},
-    'na1':  {'platform': 'na1.api.riotgames.com',  'regional': 'americas.api.riotgames.com'},
-    'euw1': {'platform': 'euw1.api.riotgames.com', 'regional': 'europe.api.riotgames.com'},
-    'eun1': {'platform': 'eun1.api.riotgames.com', 'regional': 'europe.api.riotgames.com'},
-    'jp1':  {'platform': 'jp1.api.riotgames.com',  'regional': 'asia.api.riotgames.com'},
-    'br1':  {'platform': 'br1.api.riotgames.com',  'regional': 'americas.api.riotgames.com'},
-    'la1':  {'platform': 'la1.api.riotgames.com',  'regional': 'americas.api.riotgames.com'},
-    'la2':  {'platform': 'la2.api.riotgames.com',  'regional': 'americas.api.riotgames.com'},
-    'oc1':  {'platform': 'oc1.api.riotgames.com',  'regional': 'sea.api.riotgames.com'},
-    'tr1':  {'platform': 'tr1.api.riotgames.com',  'regional': 'europe.api.riotgames.com'},
-    'ru':   {'platform': 'ru.api.riotgames.com',   'regional': 'europe.api.riotgames.com'},
+
+}
+
+
+VAL_QUEUE_MAP = {
+
+}
+
+VAL_MAP_MAP = {
+
+}
+
+VAL_AGENT_MAP = {
+   
 }
