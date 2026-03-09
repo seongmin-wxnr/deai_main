@@ -1,6 +1,8 @@
 from django.urls import path
 from . import views
 from . import riot_apiViews
+from . import riot_apiValorant
+from . import riot_apiTFT
 import urllib.request
 import urllib.error
 import urllib.parse
@@ -65,4 +67,23 @@ urlpatterns = [
     path("api/riot/dd-version/", riot_apiViews.riot_api_ddVersion, name='riot_api_dd_version'),
     path("api/riot/champions/", riot_apiViews.riot_api_champions, name='riot_api_champions'),
     path("api/riot/dd-spell/", riot_apiViews.riot_api_ddSpell, name='riot_api_dd_spell'),
+
+    ## riot api
+    ## valorant 
+    # riot/val/ + userinfo
+    path("ValorantSearch/", riot_apiValorant.riot_api_VRTUserPageRendering,name='ValorantSearch'),
+    path("riot/val/user/",riot_apiValorant.riot_api_VRTUserPageRendering, name='riot_val_user'),
+    path("api/val/account/", riot_apiValorant.val_api_search_account, name='val_api_account'),
+    path("api/val/matches/", riot_apiValorant.val_api_getMatchIDs, name='val_api_matches'),
+    path("api/val/match/<str:match_id>/", riot_apiValorant.val_api_matchDetail,name='val_api_match_detail'),
+    path("api/val/rank/", riot_apiValorant.val_api_getRank, name='val_api_rank'),
+
+    ## riot api
+    ## tft
+    ## riot/tft + user
+    path("riot/tft/user/", riot_apiTFT.tft_page_rendering, name="riot_tft_user"),
+    path("api/tft/account/", riot_apiTFT.tft_api_search_account,name="tft_api_account"),
+    path("api/tft/rank/", riot_apiTFT.tft_api_getRank, name="tft_api_rank"),
+    path("api/tft/matches/", riot_apiTFT.tft_api_getMatchIDs, name="tft_api_matches"),
+    path("api/tft/match/<str:match_id>/", riot_apiTFT.tft_api_matchDetail, name="tft_api_match_detail"),
 ]
