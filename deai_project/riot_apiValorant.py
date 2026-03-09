@@ -50,11 +50,11 @@ def _riot_get(url: str) -> dict:
     req = urllib.request.Request(
         url,
         headers={
-            'X-Riot-Token'   : settings.RIOT_API_KEY,
-            'User-Agent'     : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+            'X-Riot-Token' : settings.RIOT_API_KEY,
+            'User-Agent' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
             'Accept-Language': 'ko-KR,ko;q=0.9',
             'Accept-Charset' : 'application/x-www-form-urlencoded; charset=UTF-8',
-            'Origin'         : 'https://developer.riotgames.com',
+            'Origin' : 'https://developer.riotgames.com',
         }
     )
     print(f"[VAL API] → {url}", flush=True)
@@ -157,13 +157,13 @@ def val_api_search_account(request):
         )
 
         return JsonResponse({
-            'success'       : True,
-            'gameName'      : account.get('gameName', name),
-            'tagLine'       : account.get('tagLine',  tag),
-            'puuid'         : account['puuid'],
-            'summonerId'    : '',
-            'profileIconId' : 29,
-            'summonerLevel' : 0,
+            'success'  : True,
+            'gameName' : account.get('gameName', name),
+            'tagLine'  : account.get('tagLine',  tag),
+            'puuid' : account['puuid'],
+            'summonerId' : '',
+            'profileIconId': 29,
+            'summonerLevel': 0,
         })
 
     except RiotAPIError as e:
@@ -193,7 +193,7 @@ def val_api_getMatchIDs(request):
 
     try:
         platform, _ = _get_region_urls(region)
-        data      = _riot_get(f'https://{platform}/val/match/v1/matchlists/by-puuid/{puuid}')
+        data  = _riot_get(f'https://{platform}/val/match/v1/matchlists/by-puuid/{puuid}')
         match_ids = [h['matchId'] for h in data.get('history', [])]
 
         return JsonResponse({'success': True, 'matchIds': match_ids})
@@ -230,23 +230,23 @@ def val_api_matchDetail(request, match_id):
         platform, _ = _get_region_urls(region)
         raw = _riot_get(f'https://{platform}/val/match/v1/matches/{match_id}')
 
-        match_info    = raw.get('matchInfo',    {})
-        raw_players   = raw.get('players',      [])
-        raw_teams     = raw.get('teams',        [])
+        match_info = raw.get('matchInfo', {})
+        raw_players = raw.get('players',   [])
+        raw_teams  = raw.get('teams',  [])
         round_results = raw.get('roundResults', [])
 
         hit_map = _calc_hit_map(round_results)
         players = []
         for p in raw_players:
-            puuid  = p.get('puuid', '')
-            stats  = p.get('stats', {})
-            tier   = p.get('competitiveTier', 0)
-            ti     = _get_tier_info(tier)
+            puuid = p.get('puuid', '')
+            stats = p.get('stats', {})
+            tier = p.get('competitiveTier', 0)
+            ti = _get_tier_info(tier)
 
-            rounds  = stats.get('roundsPlayed', 1) or 1
-            score   = stats.get('score',   0)
-            kills   = stats.get('kills',   0)
-            deaths  = stats.get('deaths',  0)
+            rounds = stats.get('roundsPlayed', 1) or 1
+            score = stats.get('score',0)
+            kills = stats.get('kills', 0)
+            deaths = stats.get('deaths', 0)
             assists = stats.get('assists', 0)
 
             # ACS 
@@ -264,26 +264,26 @@ def val_api_matchDetail(request, match_id):
             char_id = p.get('characterId', '')
 
             players.append({
-                'puuid'          : puuid,
-                'teamId'         : p.get('teamId', ''),
-                'characterId'    : char_id,
-                'agentName'      : _get_agent_name(char_id),
-                'agentIconUrl'   : _get_agent_icon(char_id),
+                'puuid'  : puuid,
+                'teamId' : p.get('teamId', ''),
+                'characterId' : char_id,
+                'agentName' : _get_agent_name(char_id),
+                'agentIconUrl' : _get_agent_icon(char_id),
                 'competitiveTier': tier,
-                'tierName'       : ti['name'],
-                'tierDivision'   : ti['division'],
+                'tierName': ti['name'],
+                'tierDivision' : ti['division'],
                 'riotIdGameName' : p.get('riotIdGameName', ''),
-                'riotIdTagline'  : p.get('riotIdTagline',  ''),
-                'playerCard'     : p.get('playerCard', ''),
+                'riotIdTagline': p.get('riotIdTagline',  ''),
+                'playerCard': p.get('playerCard', ''),
                 'stats': {
-                    'score'        : score,
+                    'score' : score,
                     'roundsPlayed' : rounds,
-                    'kills'        : kills,
-                    'deaths'       : deaths,
-                    'assists'      : assists,
+                    'kills' : kills,
+                    'deaths' : deaths,
+                    'assists' : assists,
                 },
                 'damage': {
-                    'total'    : total_dmg,
+                    'total': total_dmg,
                     'perRound' : dmg_per_round,
                     'headshots': hits['head'],
                     'bodyshots': hits['body'],
@@ -296,11 +296,11 @@ def val_api_matchDetail(request, match_id):
 
         teams = [
             {
-                'teamId'      : t.get('teamId',       ''),
-                'won'         : t.get('won',          False),
+                'teamId' : t.get('teamId',''),
+                'won' : t.get('won', False),
                 'roundsPlayed': t.get('roundsPlayed', 0),
-                'roundsWon'   : t.get('roundsWon',    0),
-                'numPoints'   : t.get('numPoints',    0),
+                'roundsWon'  : t.get('roundsWon', 0),
+                'numPoints' : t.get('numPoints', 0),
             }
             for t in raw_teams
         ]
@@ -311,17 +311,17 @@ def val_api_matchDetail(request, match_id):
             'success': True,
             'match': {
                 'matchInfo': {
-                    'matchId'          : match_info.get('matchId', match_id),
-                    'mapId'            : map_id,
-                    'mapName'          : _get_map_name(map_id),
-                    'gameLengthMillis' : match_info.get('gameLengthMillis', 0),
-                    'gameStartMillis'  : match_info.get('gameStartMillis', 0),
-                    'queueId'          : queue_id,
-                    'queueName'        : settings.VAL_QUEUE_MAP.get(queue_id, queue_id or '커스텀'),
-                    'seasonId'         : match_info.get('seasonId', ''),
+                    'matchId' : match_info.get('matchId', match_id),
+                    'mapId': map_id,
+                    'mapName'  : _get_map_name(map_id),
+                    'gameLengthMillis': match_info.get('gameLengthMillis', 0),
+                    'gameStartMillis' : match_info.get('gameStartMillis', 0),
+                    'queueId' : queue_id,
+                    'queueName' : settings.VAL_QUEUE_MAP.get(queue_id, queue_id or '커스텀'),
+                    'seasonId'   : match_info.get('seasonId', ''),
                 },
                 'players': players,
-                'teams'  : teams,
+                'teams': teams,
             }
         })
 
@@ -380,19 +380,20 @@ def val_api_getRank(request):
                 pass
 
         return JsonResponse({
-            'success'      : True,
-            'ranked'       : tier > 2,
-            'tier'         : tier,
-            'tierName'     : tier_info['name'],
-            'tierDivision' : tier_info['division'],
-            'rr'           : 0,
-            'wins'         : wins,
-            'losses'       : losses,
-            'matches'      : wins + losses,
+            'success'  : True,
+            'ranked' : tier > 2,
+            'tier' : tier,
+            'tierName' : tier_info['name'],
+            'tierDivision': tier_info['division'],
+            'rr'  : 0,
+            'wins': wins,
+            'losses' : losses,
+            'matches': wins + losses,
         })
 
     except RiotAPIError as e:
         return _handle_error(e)
     except Exception as e:
         print(f"[VAL] rank 예외: {e}", flush=True)
+
         return JsonResponse({'success': False, 'message': str(e)}, status=500)
