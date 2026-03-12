@@ -7,6 +7,7 @@ import re
 from django.http      import JsonResponse
 from django.shortcuts import render
 from django.conf      import settings
+from django.core.cache import cache
 
 _COMPANION_CACHE: dict = {} 
 _COMPANION_LOADED: bool = False
@@ -22,7 +23,6 @@ _CDRAGON_PLUGIN_BASE = (
 
 
 def _load_companion_cache() -> None:
-    """CDragon companions.json 로드 → content_id 기준 캐시 구축."""
     global _COMPANION_CACHE, _COMPANION_LOADED
     if _COMPANION_LOADED:
         return
@@ -52,10 +52,10 @@ def _companion_img_url(content_id: str) -> str:
     return _COMPANION_CACHE.get(content_id, '')
 
 TFT_QUEUE_KO = {
-    'RANKED_TFT': '랭크',
-    'RANKED_TFT_TURBO': '하이퍼롤',
-    'NORMAL_TFT'  : '일반',
-    'RANKED_TFT_PAIRS' : '듀오전',
+    'RANKED_TFT'           : '랭크',
+    'RANKED_TFT_TURBO'     : '하이퍼롤',
+    'NORMAL_TFT'           : '일반',
+    'RANKED_TFT_PAIRS'     : '듀오전',
     'RANKED_TFT_DOUBLE_UP' : '더블업',
 }
 
@@ -116,18 +116,19 @@ def _riot_get(url: str) -> dict:
     req = urllib.request.Request(
         url,
         headers={
-            'X-Riot-Token': settings.RIOT_API_KEY,
-            'User-Agent' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+            'X-Riot-Token'   : settings.RIOT_API_KEY,
+            'User-Agent'     : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
             'Accept-Language': 'ko-KR,ko;q=0.9',
-            'Accept-Charse' : 'application/x-www-form-urlencoded; charset=UTF-8',
-            'Origin' : 'https://developer.riotgames.com',
+            'Accept-Charset' : 'application/x-www-form-urlencoded; charset=UTF-8',
+            'Origin'         : 'https://developer.riotgames.com',
         }
     )
-    print(f"[TFT DEBUG] -> {url}", flush=True)
+    print(f"[RIOT] 호출 URL: {url}", flush=True)
+    print(f"[RIOT] 사용 키: {settings.RIOT_API_KEY[:20]}...", flush=True)
     try:
-        with urllib.request.urlopen(req, timeout=10) as resp:
+        with urllib.request.urlopen(req, timeout=8) as resp:
             data = json.loads(resp.read().decode('utf-8'))
-            print(f"[TFT DEBUG] -> s {str(data)[:120]}", flush=True)
+            print(f"[RIOT] 성공 응답: {str(data)[:100]}", flush=True)
             return data
     except urllib.error.HTTPError as e:
         body = {}
@@ -135,11 +136,14 @@ def _riot_get(url: str) -> dict:
             body = json.loads(e.read().decode('utf-8'))
         except Exception:
             pass
-        print(f"[TFT DEBUG] -> f HTTP {e.code}: {body}", flush=True)
+        print(f"[RIOT] HTTP 에러: {e.code} / body: {body}", flush=True)
         raise RiotAPIError(e.code, body.get('status', {}).get('message', str(e)))
     except urllib.error.URLError as e:
-        print(f"[[TFT DEBUG] -> f: {e.reason}", flush=True)
+        print(f"[RIOT] URL 에러: {e.reason}", flush=True)
         raise RiotAPIError(503, f'네트워크 오류: {e.reason}')
+    except Exception as e:
+        print(f"[RIOT] 알 수 없는 에러: {e}", flush=True)
+        raise
 
 
 def _get_region_urls(region: str) -> tuple:
@@ -160,10 +164,20 @@ def tft_page_rendering(request):
 def tft_api_search_account(request):
     if request.method != 'GET':
         return JsonResponse({'success': False, 'message': '잘못된 메서드입니다.'}, status=405)
+    
 
-    name= request.GET.get('name','').strip()
-    tag = request.GET.get('tag',  '').strip()
-    region = request.GET.get('region','kr').strip().lower()
+    summonerId = request.GET.get("summonerId")
+    region = request.GET.get('region')
+
+    cache_key = f"tft_rank_{region}_{summonerId}"
+
+    cached = cache.get(cache_key)
+    if cached:
+        return JsonResponse(cached)
+    
+    name   = request.GET.get('name',   '').strip()
+    tag    = request.GET.get('tag',    '').strip()
+    region = request.GET.get('region', 'kr').strip().lower()
 
     if not name or not tag:
         return JsonResponse({'success': False, 'message': '이름과 태그를 입력해주세요.'}, status=400)
@@ -182,7 +196,7 @@ def tft_api_search_account(request):
         summoner = _riot_get(
             f'https://{platform}/tft/summoner/v1/summoners/by-puuid/{puuid}'
         )
-
+         
         return JsonResponse({
             'success' : True,
             'gameName' : account.get('gameName', name),
@@ -192,6 +206,7 @@ def tft_api_search_account(request):
             'profileIconId': summoner.get('profileIconId', 1),
             'summonerLevel': summoner.get('summonerLevel', 0),
         })
+
 
     except RiotAPIError as e:
         return _handle_error(e)
@@ -204,56 +219,78 @@ def tft_api_search_account(request):
 def tft_api_getRank(request):
     if request.method != 'GET':
         return JsonResponse({'success': False, 'message': '잘못된 메서드입니다.'}, status=405)
-    print("[TFT DEBUG] -> RANK 조회 메서드 접속됌.")
-    summoner_id = request.GET.get('summonerId', '').strip()
+    
+    summonerId = request.GET.get('summonerId')
+    region = request.GET.get('puuid')
+
+    cache_key = f"tft_rank_{region}_{summonerId}"
+    cached = cache.get(cache_key)
+    if cached:
+        return JsonResponse(cached)
+    
+    print("[TFT DEBUG RANK DEBUG] -> RANK 조회 메서드 접속됌.")
     puuid = request.GET.get('puuid', '').strip()
-    region = request.GET.get('region','kr').strip().lower()
+    region = request.GET.get('region', 'kr').strip().lower()
+    summoner_id = request.GET.get('summonerId', '').strip() ## 씨ㅣㅣ빨 키에서 반환 안해줌 아무래도 puuid로 직접 조회해야할 듯
 
     if not summoner_id and not puuid:
-        return JsonResponse({'success': False, 'message': 'summonerId 또는 puuid가 필요합니다.'}, status=400)
-    print(f"[TFT DEBUG] -> {summoner_id} : {puuid} : {region}")
+        return JsonResponse({'success': False, 'message': '올바른 정보를 입력해주세요.'}, status=400)
+    
+    print(f"[TFT DEBUG RANK DEBUG] -> {summoner_id} : {puuid} : {region}")
     try:
         platform, _ = _get_region_urls(region)
-        if not summoner_id and puuid:
-            print(f"[TFT] summonerId 없음 -> puuid로 소환사 재조회", flush=True)
-            summoner = _riot_get(
-                f'https://{platform}/tft/summoner/v1/summoners/by-puuid/{puuid}'
+        if puuid:
+            print(f"[TEST RIOT API] -> {platform} : {puuid}")
+            entries = _riot_get(
+                f'https://{platform}/tft/league/v1/by-puuid/{puuid}'
             )
-            summoner_id = summoner.get('id', '')
+        elif summoner_id:
+            print(f"[TEST RIOT API] -> {platform} : {summoner_id}")
+            entries = _riot_get(
+                f'https://{platform}/lol/league/v4/entries/by-summoner/{summoner_id}'
+            )
+        else:
+            return JsonResponse({'success': True, 'solo': None, 'flex': None})
 
-        if not summoner_id:
-            return JsonResponse({'success': True, 'ranks': []})
+        def parsing_queueTypeData(data):
+            if not data:
+                return None
+            total = data['wins'] + data['losses']
+            win_rate = round(data['wins'] / total * 100) if total > 0 else 0
 
-        entries = _riot_get(
-            f'https://{platform}/tft/league/v1/entries/by-summoner/{summoner_id}'
-        )
+            print(f"[TFT RANK DEBUG] -> {win_rate} {data['tier']} : {data['rank']}")
+            return {
+                'queueType': data['queueType'],
+                "leagueId": [data['leagueId']],
+                "inactive": data['inactive'],
+                'tier' : [data['tier']],
+                'tierKo': TFT_TIER_KO.get(data['tier'], data['tier']),
+                'rank': [data['rank']],
+                'lp' : data['leaguePoints'],
+                'wins' : data['wins'],
+                'losses' : data['losses'],
+                'winRate' : win_rate,
+                'hotStreak': data['hotStreak'],
+                'veteran' : data['veteran'],
+                'freshBlood': data['freshBlood'],
+                'emblemUrl': _tier_emblem_url(data['tier']),
+            }
 
-        ranks = []
-        print(f"[TFT DEBUG] -> 발견된 유저")
-        for e in entries:
-            tier   = e.get('tier','UNRANKED')
-            wins   = e.get('wins',0)
-            losses = e.get('losses',0)
-            total  = wins + losses
-            wr     = round(wins / total * 100, 1) if total else 0
+        solo = next((e for e in entries if e['queueType'] == 'RANKED_TFT'), None)
+        double = next((e for e in entries if e['queueType'] == 'RANKED_TFT_DOUBLE_UP'),  None)
+        temp = next((e for e in entries if e['queueType'] == 'RANKED_TFT' and 'RANKED_TFT_DOUBLE_UP'), None)
+        result = parsing_queueTypeData(temp) 
 
-            ranks.append({
-                'queueType': e.get('queueType', ''),
-                'queueName': TFT_QUEUE_KO.get(e.get('queueType', ''), e.get('queueType', '')),
-                'tier' : tier,
-                'tierKo': TFT_TIER_KO.get(tier, tier),
-                'rank': e.get('rank', ''),
-                'lp' : e.get('leaguePoints', 0),
-                'wins' : wins,
-                'losses' : losses,
-                'winRate' : wr,
-                'hotStreak': e.get('hotStreak',  False),
-                'veteran' : e.get('veteran',    False),
-                'freshBlood': e.get('freshBlood', False),
-                'emblemUrl': _tier_emblem_url(tier),
-            })
-        print(f"[TFT DEBUG] -> {ranks} returned")
-        return JsonResponse({'success': True, 'ranks': ranks})
+        print(f"[RANKED_TFT] {solo}")
+        print(f"[RANKED_TFT_DOUBLE_UP] : {double}")
+
+        cache.set(cache_key, result, 300)
+        # return JsonResponse(result)
+        return JsonResponse({
+            'success': True,
+            'solo'   : parsing_queueTypeData(solo),
+            'double'   : parsing_queueTypeData(double),
+        })
 
     except RiotAPIError as e:
         return _handle_error(e)
@@ -330,6 +367,7 @@ def tft_api_matchDetail(request, match_id):
             'queueName': TFT_QUEUE_KO.get(queue_type, queue_type or '일반'),
             'gameDate': info.get('game_datetime', 0),
         }
+        items = []
         participants = []
         for p in raw_parts:
 
@@ -347,6 +385,24 @@ def tft_api_matchDetail(request, match_id):
                 'TFT16_Huntress', 'TFT16_HexMech', 'TFT16_Harvester',
                 'TFT16_Chronokeeper', 'TFT16_DarkinWeapon',
             }
+
+            # ITEM_NAME_KO = {
+            #     "TFT_Item_SteraksGage":"스테락의 도전" , "TFT_Item_Morellonomicon":"모렐로노미콘" ,
+            #     "TFT_Item_HextechGunblade":"마법공학 총검", "TFT_Item_SunfireCape":"태양불꽃 망토", 
+            #     "수은",
+            #     "밤의 끝자락" , "대천사의 지팡이" , "TFT_Item_DragonsClaw":"용의 발톱",
+            #     "TFT_Item_AdaptiveHelm":"적응형 투구", "라바돈의 죽음모자",
+            #     "저녁갑주" , "푸른 파수꾼", "죽음의 검", "수호자의 맹세", "거인의 결의", "TFT_Item_JeweledGauntlet":"보석 건틀릿",
+            #     "도적의 장갑", "전략가의 망토", "정의의 손길", "네셔의 이빨", "방패파괴자", "루난의 허리케인",
+            #     "피바라기", "TFT_Item_SpearOfShojin":"쇼진의 창",
+            #     "스테틱 단검", "TFT_Item_Redemption":"구원", 
+            #     "최후의 속삭임", "무한의 대검", "굳건한 심장",
+            #     "이온 충격기", "전략가의 왕관",
+            #     "가고일 돌갑옷",  "크라운 가드", 
+            #     "BrambleVest":"덤불조끼", "전략가의 방패",
+            #     "TFT_Item_GuinsoosRageblade":"구인수의 격노검", "거인 학살자", 
+            #     "TFT_Item_RedBuff":"붉은 정령", "워모그 갑옷",
+            # }
             traits = []
             for t in p.get('traits', []):
                 style    = t.get('style', 0)
@@ -404,7 +460,7 @@ def tft_api_matchDetail(request, match_id):
             })
 
         participants.sort(key=lambda x: x['placement'])
-
+       #print(f"[TFT DEBUG] -> {units}]\n[TFT DEBUG] -> {participants}")
         return JsonResponse({
             'success': True,
             'match': {
@@ -417,5 +473,27 @@ def tft_api_matchDetail(request, match_id):
         return _handle_error(e)
     except Exception as e:
         print(f"[TFT] match detail 예외: {e}", flush=True)
-
         return JsonResponse({'success': False, 'message': str(e)}, status=200)
+    
+# def tft_api_characterItems(request, match_id):
+#     if request.method != 'GET':
+#         return JsonResponse({'success': False, 'message': '잘못된 메서드입니다.'}, status=405)
+
+#     region = request.GET.get('region', 'kr').strip().lower()
+
+#     try:
+#         _, regional = _get_region_urls(region)
+#         raw = _riot_get(f'https://{regional}/tft/match/v1/matches/{match_id}')
+#         info = raw.get('info', {})
+
+#         characterID = info.get('character_id', [])
+#         itemArray = info.get('itemNames', [])
+
+        
+
+#     except RiotAPIError as e:
+#         return _handle_error(e)
+#     except Exception as e:
+#         print(f"[TFT] match detail 예외: {e}", flush=True)
+#         return JsonResponse({'success': False, 'message': str(e)}, status=200)
+    
