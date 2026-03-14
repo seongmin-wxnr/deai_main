@@ -6,6 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title id="page-title">소환사 정보 — Deai × LoL</title>
   <link rel="stylesheet" href="{% static 'css/riot_lol.css' %}">
+  <!-- riot_userpagemodalscroll -->
+  <link rel="stylesheet" href="{% static 'css/riot_userpagemodalscroll.css' %}">
 </head>
 <body>
 
@@ -214,6 +216,7 @@ function tierEmblemUrl(t) {
   };
   const name = map[t];
   if (!name) return '';
+  //return `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-emblem/emblem-'+t+'.png`
   return `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-emblems/emblem-${name}.png`;
 }
 function tierEmblemFallback(img) {
@@ -433,7 +436,7 @@ function openMatchModal(match, champMap) {
   document.getElementById('modal-queue').textContent    = queue;
   document.getElementById('modal-duration').textContent = dur;
   document.getElementById('modal-date').textContent     = dateStr;
-)
+  
   const team1 = info.participants.filter(p => p.teamId === 100);
   const team2 = info.participants.filter(p => p.teamId === 200);
   const team1Win = info.teams?.find(t => t.teamId === 100)?.win;
@@ -760,7 +763,8 @@ init();
       <!-- 팀1 (블루) -->
       <div style="margin-bottom:20px;">
         <div id="modal-team1-label" style="font-family:var(--font-ui);font-size:10px;font-weight:700;letter-spacing:2px;margin-bottom:10px;padding:6px 2px;border-bottom:1px solid #1e1e1e;"></div>
-        <table style="width:100%;border-collapse:collapse;" id="modal-team1-table">
+        <div class="modal-table-scroll">
+        <table class="modal-team-table" style="width:100%;border-collapse:collapse;" id="modal-team1-table">
           <thead>
             <tr style="font-family:var(--font-ui);font-size:11px;color:#999;letter-spacing:1px;background:#111;font-weight:600;">
               <th style="text-align:left;padding:4px 6px;font-weight:600;">소환사</th>
@@ -774,6 +778,7 @@ init();
           </thead>
           <tbody id="modal-team1-body"></tbody>
         </table>
+        </div>
       </div>
 
       <div style="border-top:1px solid #2a2a2a;margin:8px 0 20px;"></div>
@@ -781,7 +786,8 @@ init();
       <!-- 팀2 (레드) -->
       <div>
         <div id="modal-team2-label" style="font-family:var(--font-ui);font-size:10px;font-weight:700;letter-spacing:2px;margin-bottom:10px;padding:6px 2px;border-bottom:1px solid #1e1e1e;"></div>
-        <table style="width:100%;border-collapse:collapse;" id="modal-team2-table">
+        <div class="modal-table-scroll">
+        <table class="modal-team-table" style="width:100%;border-collapse:collapse;" id="modal-team2-table">
           <thead>
             <tr style="font-family:var(--font-ui);font-size:11px;color:#999;letter-spacing:1px;background:#111;font-weight:600;">
               <th style="text-align:left;padding:4px 6px;font-weight:600;">소환사</th>
@@ -795,6 +801,7 @@ init();
           </thead>
           <tbody id="modal-team2-body"></tbody>
         </table>
+        </div>
       </div>
 
     </div>
@@ -845,6 +852,69 @@ init();
 }
 .champ-filter-btn:hover { border-color: var(--gold); color: var(--gold); }
 .champ-filter-btn.active { background: rgba(200,155,60,0.12); border-color: var(--gold); color: var(--gold); }
+
+.modal-table-scroll {
+  width: 100%;
+}
+.modal-team-table {
+  width: 100%;
+  min-width: 100%;
+}
+@media (max-width: 768px) {
+  #match-modal-overlay {
+    padding: 14px 8px;
+  }
+  #match-modal {
+    max-width: 100%;
+    border-radius: 10px;
+  }
+  #modal-header {
+    padding: 14px 14px !important;
+    align-items: flex-start !important;
+    gap: 10px;
+  }
+  #modal-header > div:first-child {
+    min-width: 0;
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+  #match-modal-overlay > #match-modal > div:nth-of-type(2) {
+    padding: 12px 10px !important;
+  }
+  .modal-table-scroll {
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 6px;
+  }
+  .modal-team-table {
+    min-width: 760px;
+  }
+  .modal-team-table th,
+  .modal-team-table td {
+    white-space: nowrap;
+  }
+  .modal-team-table th:first-child,
+  .modal-team-table td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: #0d0d0d;
+  }
+  .modal-team-table thead th:first-child {
+    background: #111;
+    z-index: 3;
+  }
+  .modal-player-row.me td:first-child {
+    background: #20190c;
+  }
+  .modal-item-icon,
+  .modal-item-slot {
+    width: 24px;
+    height: 24px;
+  }
+}
+
 </style>
 <script>
 window.addEventListener('pageshow', (e) => {
