@@ -6,24 +6,82 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>소환사 검색 — Deai × LoL</title>
   <link rel="stylesheet" href="{% static 'css/riot_lol.css' %}">
+  <link rel="stylesheet" href="{% static 'css/riot_search_tagAlign.css' %}">
+  <!-- <link rel="stylesheet" href="{% static 'css/riot_search_mobile_button.css' %}"> -->
 </head>
 <body>
+
+<div id="bg-img-wrap" style="position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;">
+  <!-- LoL 배경 -->
+  <img id="bg-lol" src="{% static 'image_source/riot_lolBackground.jpg' %}"
+       style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+              opacity:0.18;filter:blur(3px) brightness(0.55);
+              transition:opacity 0.8s ease;"/>
+  <img id="bg-val" src="{% static 'image_source/riot_vrtBackground.jpg' %}"
+       style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+              opacity:0;filter:blur(3px) brightness(0.55);
+              transition:opacity 0.8s ease;"/>
+  <img id="bg-tft" src="{% static 'image_source/riot_tftBackground.jpg' %}"
+       style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+              opacity:0;filter:blur(3px) brightness(0.5);
+              transition:opacity 0.8s ease;"/>
+  <div id="bg-gradient" style="position:absolute;inset:0;
+       background:linear-gradient(to bottom, rgba(8,12,16,0.55) 0%, rgba(8,12,16,0.25) 50%, rgba(8,12,16,0.65) 100%);
+       transition:background 0.8s ease;"></div>
+</div>
 
 <nav class="nav">
   <a class="nav-logo" href="/Deai_main/">
     <span class="nav-logo-text">DEAI</span>
     <span class="nav-logo-sep">×</span>
-    <span class="nav-logo-sub">League of Legends</span>
+    <span class="nav-logo-sub">Riot Games API</span>
   </a>
-  <button class="nav-back" onclick="navigateTo('/Deai_main/')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M19 12H5M5 12l7-7M5 12l7 7"/>
-    </svg>
-    메인으로
-  </button>
+
+  <!-- <a class="nav-logo" href="/Valorant/">
+    <span class="nav-logo-text">DEAI</span>
+    <span class="nav-logo-sep">×</span>
+    <span class="nav-logo-sub">Valorant</span>
+  </a> -->
+  <div class="nav-right" style="display:flex;align-items:center;gap:12px;">
+    <!-- 게임 전환 버튼 -->
+    <div class="game-switch-group" style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:8px;padding:4px 6px;">
+      <button class="game-switch-btn" id="btn-lol" onclick="switchGame('lol')"
+              style="display:flex;align-items:center;gap:5px;background:rgba(200,155,60,0.15);border:1px solid rgba(200,155,60,0.4);border-radius:6px;padding:5px 12px;cursor:default;font-family:var(--font-ui);font-size:12px;font-weight:700;color:var(--gold);letter-spacing:0.5px;transition:all 0.2s;">
+        <svg viewBox="0 0 20 20" fill="currentColor" style="width:13px;height:13px;"><path d="M10 2a8 8 0 100 16A8 8 0 0010 2zm0 2a6 6 0 110 12A6 6 0 0110 4zm0 2a4 4 0 100 8 4 4 0 000-8z" opacity="0.5"/><circle cx="10" cy="10" r="2.5"/></svg>
+        <span class="label-full">LoL</span>
+        <span class="label-short">LoL</span>
+      </button>
+      <button class="game-switch-btn" id="btn-val" onclick="switchGame('val')"
+              style="display:flex;align-items:center;gap:5px;background:none;border:1px solid transparent;border-radius:6px;padding:5px 12px;cursor:pointer;font-family:var(--font-ui);font-size:12px;font-weight:600;color:var(--text-muted);letter-spacing:0.5px;transition:all 0.2s;"
+              onmouseover="if(currentGame!=='val'){this.style.borderColor='rgba(255,70,84,0.4)';this.style.color='#ff4654';this.style.background='rgba(255,70,84,0.08)'}"
+              onmouseout="if(currentGame!=='val'){this.style.borderColor='transparent';this.style.color='var(--text-muted)';this.style.background='none'}">
+        <svg viewBox="0 0 20 20" fill="currentColor" style="width:13px;height:13px;"><path d="M3 10l7-8 7 8-7 2-7-2z" opacity="0.7"/><path d="M3 10l7 2 7-2-7 8-7-8z"/></svg>
+        <span class="label-full">VALORANT : API 연결 없음</span>
+        <span class="label-short">VALORANT</span>
+      </button>
+      <button class="game-switch-btn" id="btn-tft" onclick="switchGame('tft')"
+              style="display:flex;align-items:center;gap:5px;background:none;border:1px solid transparent;border-radius:6px;padding:5px 12px;cursor:pointer;font-family:var(--font-ui);font-size:12px;font-weight:600;color:var(--text-muted);letter-spacing:0.5px;transition:all 0.2s;"
+              onmouseover="if(currentGame!=='tft'){this.style.borderColor='rgba(138,99,210,0.45)';this.style.color='#b89cf0';this.style.background='rgba(138,99,210,0.1)'}"
+              onmouseout="if(currentGame!=='tft'){this.style.borderColor='transparent';this.style.color='var(--text-muted)';this.style.background='none'}">
+        <svg viewBox="0 0 20 20" fill="currentColor" style="width:13px;height:13px;">
+          <polygon points="10,2 17,6 17,14 10,18 3,14 3,6" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.8"/>
+          <circle cx="10" cy="10" r="2.5" fill="currentColor" opacity="0.9"/>
+        </svg>
+        <span class="label-full">TFT : 페이지/기능 미완성</span>
+        <span class="label-short">TFT</span>
+      </button>
+    </div>
+
+    <button class="nav-back nav-main-link" onclick="navigateTo('/Deai_main/')">
+      <!-- <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M19 12H5M5 12l7-7M5 12l7 7"/>
+      </svg> -->
+      메인으로
+    </button>
+  </div>
 </nav>
 
-<div class="page-wrapper">
+<div class="page-wrapper" style="position:relative;z-index:1;">
   <div class="search-hero">
     <div class="search-emblem anim-1">
       <svg viewBox="0 0 80 80" fill="none">
@@ -34,10 +92,10 @@
       </svg>
     </div>
 
-    <h1 class="search-title anim-2">DEAI <span>LOL 전적 검색</span></h1>
-    <p class="search-subtitle anim-2">RIOT GAMES API 사용<br>전적 검색 이후, 뒤로가기 버튼을 누르면 페이지가 로딩이 안되는 버그가 있습니다.<br>검색으로 버튼을 눌러주세요.</p>
+    <h1 class="search-title anim-2">DEAI <span>BETA Version</span></h1>
+    <p class="search-subtitle anim-2">LEAGUE OF LEGENDS<br>전적 검색</p>
 
-    <div class="search-box anim-3">
+    <div class="search-box anim-3" style="opacity: 0em;">
       <div class="search-input-wrap">
         <select class="search-region-select" id="region-select">
           <option value="kr">KR</option>
@@ -80,6 +138,8 @@
     <div class="server-status anim-5">
       <div class="server-chip"><div class="server-dot"></div> KR 서버 정상</div>
       <div class="server-chip"><div class="server-dot"></div> Riot API 연결됨</div>
+      <div class="server-chip"><div class="server-dot"></div> Riot API : Valorant -> X</div>
+      <div class="server-chip"><div class="server-dot"></div> Riot API : TFT -> 초기구현단계</div>
       <div class="server-chip"><div class="server-dot" style="background:var(--gold)"></div> Deai 연동</div>
     </div>
   </div>
@@ -105,9 +165,10 @@ async function doSearch() {
 
   try {
     // /api/riot/account/ 하나로 Account + Summoner 정보를 모두 반환
-    const res  = await fetch(
-      `/api/riot/account/?region=${encodeURIComponent(region)}&name=${encodeURIComponent(gameName)}&tag=${encodeURIComponent(tagLine)}`
-    );
+    const apiPath = currentGame === 'tft'
+      ? `/api/tft/account/?name=${encodeURIComponent(gameName)}&tag=${encodeURIComponent(tagLine)}&region=${encodeURIComponent(region)}`
+      : `/api/riot/account/?region=${encodeURIComponent(region)}&name=${encodeURIComponent(gameName)}&tag=${encodeURIComponent(tagLine)}`;
+    const res  = await fetch(apiPath);
     const data = await res.json();
     if (!data.success) { showError(errorTitle(res.status), data.message); return; }
 
@@ -124,7 +185,13 @@ async function doSearch() {
       iconId:     data.profileIconId,
       level:      data.summonerLevel,
     });
-    navigateTo(`/riot/lol/user/?${p.toString()}`);
+    if (currentGame === 'val') {
+      navigateTo(`/riot/val/user/?${p.toString()}`);
+    } else if (currentGame === 'tft') {
+      navigateTo(`/riot/tft/user/?${p.toString()}`);
+    } else {
+      navigateTo(`/riot/lol/user/?${p.toString()}`);
+    }
 
   } catch(err) {
     showError('네트워크 오류', '서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.');
@@ -169,6 +236,86 @@ function renderRecent() {
     chip.addEventListener('click',()=>{ document.getElementById('region-select').value=item.region; document.getElementById('name-input').value=item.gameName; document.getElementById('tag-input').value=item.tagLine; doSearch(); });
     ul.appendChild(chip);
   });
+}
+let currentGame = 'lol';
+
+function switchGame(game) {
+  if (currentGame === game) return;
+  currentGame = game;
+
+  const bgLol  = document.getElementById('bg-lol');
+  const bgVal  = document.getElementById('bg-val');
+  const bgTft  = document.getElementById('bg-tft');
+  const btnLol = document.getElementById('btn-lol');
+  const btnVal = document.getElementById('btn-val');
+  const btnTft = document.getElementById('btn-tft');
+  const title  = document.querySelector('.search-subtitle');
+  const hint   = document.querySelector('.search-hint');
+
+  // 모든 배경 끄기
+  bgLol.style.opacity = '0';
+  bgVal.style.opacity = '0';
+  bgTft.style.opacity = '0';
+
+  // 모든 버튼 비활성화 스타일 초기화
+  [btnLol, btnVal, btnTft].forEach(b => {
+    b.style.background   = 'none';
+    b.style.borderColor  = 'transparent';
+    b.style.color        = 'var(--text-muted)';
+    b.style.cursor       = 'pointer';
+    b.style.fontWeight   = '600';
+  });
+
+  if (game === 'val') {
+    bgVal.style.opacity = '0.18';
+    btnVal.style.background  = 'rgba(255,70,84,0.15)';
+    btnVal.style.borderColor = 'rgba(255,70,84,0.4)';
+    btnVal.style.color       = '#ff4654';
+    btnVal.style.cursor      = 'default';
+    btnVal.style.fontWeight  = '700';
+    fadeText(title, 'VALORANT<br>전적 검색');
+    fadeText(hint,  '라이엇 ID 형식으로 입력하세요 &nbsp;·&nbsp; 예) <strong>LeBlanc&nbsp;#KR1</strong>');
+    document.querySelector('.search-name-input').placeholder = '플레이어 이름';
+
+  } else if (game === 'tft') {
+    bgTft.style.opacity = '0.18';
+    btnTft.style.background  = 'rgba(138,99,210,0.15)';
+    btnTft.style.borderColor = 'rgba(138,99,210,0.45)';
+    btnTft.style.color       = '#b89cf0';
+    btnTft.style.cursor      = 'default';
+    btnTft.style.fontWeight  = '700';
+    fadeText(title, 'TEAMFIGHT TACTICS<br>전적 검색');
+    fadeText(hint,  '라이엇 ID 형식으로 입력하세요 &nbsp;·&nbsp; 예) <strong>Hide on bush&nbsp;#KR1</strong>');
+    document.querySelector('.search-name-input').placeholder = '소환사 이름';
+
+  } else {
+    bgLol.style.opacity = '0.18';
+    btnLol.style.background  = 'rgba(200,155,60,0.15)';
+    btnLol.style.borderColor = 'rgba(200,155,60,0.4)';
+    btnLol.style.color       = 'var(--gold)';
+    btnLol.style.cursor      = 'default';
+    btnLol.style.fontWeight  = '700';
+    fadeText(title, 'LEAGUE OF LEGENDS<br>전적 검색');
+    fadeText(hint,  '라이엇 ID 형식으로 입력하세요 &nbsp;·&nbsp; 예) <strong>Hide on bush&nbsp;#KR1</strong>');
+    document.querySelector('.search-name-input').placeholder = '소환사 이름';
+  }
+}
+
+function fadeText(el, newHtml) {
+  el.style.transition = 'opacity 0.3s ease';
+  el.style.opacity = '0';
+  setTimeout(() => {
+    el.innerHTML = newHtml;
+    el.style.opacity = '1';
+  }, 300);
+}
+
+function showValorantToast() {
+  const t = document.getElementById('toast');
+  t.textContent = '🚧 발로란트 전적 검색은 준비 중입니다';
+  t.style.cssText = 'display:block;position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:#1a1a2e;border:1px solid rgba(255,70,84,0.5);color:#ff4654;font-family:var(--font-ui);font-size:13px;font-weight:600;padding:12px 24px;border-radius:8px;z-index:9999;white-space:nowrap;box-shadow:0 4px 20px rgba(255,70,84,0.2);';
+  clearTimeout(window._vToast);
+  window._vToast = setTimeout(() => { t.style.display='none'; }, 3000);
 }
 function navigateTo(url) { document.body.style.transition='opacity .3s,transform .3s'; document.body.style.opacity='0'; document.body.style.transform='translateY(-8px)'; setTimeout(()=>location.href=url,280); }
 function esc(s) { return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
