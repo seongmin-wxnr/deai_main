@@ -6,8 +6,9 @@ import json
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.conf import settings
+from django.core.cache import cache
 
-from .models import BaseUserInformation_data
+# from .models import BaseUserInformation_data
 
 class RiotAPIError(Exception):
     def __init__(self, status_code: int, message: str):
@@ -20,11 +21,11 @@ def _riot_get(url: str) -> dict:
     req = urllib.request.Request(
         url,
         headers={
-            'X-Riot-Token' : settings.RIOT_API_KEY,
-            'User-Agent' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+            'X-Riot-Token'   : settings.RIOT_API_KEY,
+            'User-Agent'     : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
             'Accept-Language': 'ko-KR,ko;q=0.9',
-            'Accept-Charset': 'application/x-www-form-urlencoded; charset=UTF-8',
-            'Origin' : 'https://developer.riotgames.com',
+            'Accept-Charset' : 'application/x-www-form-urlencoded; charset=UTF-8',
+            'Origin'         : 'https://developer.riotgames.com',
         }
     )
     print(f"[RIOT] 호출 URL: {url}", flush=True)
@@ -32,7 +33,7 @@ def _riot_get(url: str) -> dict:
     try:
         with urllib.request.urlopen(req, timeout=8) as resp:
             data = json.loads(resp.read().decode('utf-8'))
-            print(f"[RIOT] 성공 응답: {str(data)[:100]}", flush=True) 
+            print(f"[RIOT] 성공 응답: {str(data)[:100]}", flush=True)
             return data
     except urllib.error.HTTPError as e:
         body = {}
@@ -43,10 +44,10 @@ def _riot_get(url: str) -> dict:
         print(f"[RIOT] HTTP 에러: {e.code} / body: {body}", flush=True)
         raise RiotAPIError(e.code, body.get('status', {}).get('message', str(e)))
     except urllib.error.URLError as e:
-        print(f"[RIOT] URL 에러: {e.reason}", flush=True) 
+        print(f"[RIOT] URL 에러: {e.reason}", flush=True)
         raise RiotAPIError(503, f'네트워크 오류: {e.reason}')
     except Exception as e:
-        print(f"[RIOT] 알 수 없는 에러: {e}", flush=True) 
+        print(f"[RIOT] 알 수 없는 에러: {e}", flush=True)
         raise
 
 
@@ -76,14 +77,12 @@ def _error_response(e: RiotAPIError) -> JsonResponse:
     )
 
 def riotSearchPage_rendering(request):
-    if not request.session.get('user_id'):
-        return render(request, 'login.html')
     return render(request, 'riot_lolSearch.html')
 
 
 def riotUserPage_rendering(request):
-    if not request.session.get('user_id'):
-        return render(request, 'login.html')
+    # if not request.session.get('user_id'):
+    #     return render(request, 'login.html')
     return render(request, 'riot_lolUserpage.html', {
         'DD_VERSION': settings.RIOT_DD_VERSION,
     })
@@ -93,9 +92,9 @@ def riot_api_search_user(request):
     if request.method != 'GET':
         return JsonResponse({'success': False, 'message': '잘못된 메서드 입니다.'}, status=405)
 
-    name   = request.GET.get('name', '').strip()
-    tag    = request.GET.get('tag', '').strip()
-    region = request.GET.get('region','kr').strip().lower()
+    name   = request.GET.get('name',   '').strip()
+    tag    = request.GET.get('tag',    '').strip()
+    region = request.GET.get('region', 'kr').strip().lower()
     print(f"[DEBUG] 함수 진입 - name tag region: {name} - {tag} - {region}", flush=True)
     if not name or not tag:
         return JsonResponse({'success': False, 'message': '소환사 이름과 태그를 입력해주세요.'}, status=400)
@@ -113,17 +112,17 @@ def riot_api_search_user(request):
         )
         print(f"[DEBUG] summoner 응답: {summoner}", flush=True)
         return JsonResponse({
-            'success'  : True,
-            'puuid' : account['puuid'],
-            'gameName': account['gameName'],
-            'tagLine': account['tagLine'],
-            'summonerId': summoner.get('id', summoner.get('summonerId', '')),
-            'accountId' : summoner.get('accountId', ''),
+            'success'       : True,
+            'puuid'         : account['puuid'],
+            'gameName'      : account['gameName'],
+            'tagLine'       : account['tagLine'],
+            'summonerId'    : summoner.get('id', summoner.get('summonerId', '')),
+            'accountId'     : summoner.get('accountId', ''),
             'profileIconId' : summoner.get('profileIconId', 0),
             'summonerLevel' : summoner.get('summonerLevel', 0),
-            'region'  : region,
-            'platform' : platform,
-            'regional' : regional,
+            'region'        : region,
+            'platform'      : platform,
+            'regional'      : regional,
         })
 
     except RiotAPIError as e:
@@ -146,10 +145,12 @@ def riot_api_rankInfo(request):
     try:
         platform, _ = _get_region_urls(region)
         if puuid:
+            print(f"[TEST RIOT API] -> {platform} : {puuid}")
             entries = _riot_get(
                 f'https://{platform}/lol/league/v4/entries/by-puuid/{puuid}'
             )
         elif summoner_id:
+            print(f"[TEST RIOT API] -> {platform} : {summoner_id}")
             entries = _riot_get(
                 f'https://{platform}/lol/league/v4/entries/by-summoner/{summoner_id}'
             )
@@ -157,26 +158,29 @@ def riot_api_rankInfo(request):
             return JsonResponse({'success': True, 'solo': None, 'flex': None})
 
         def parsing_entry(var):
+            print("[LOL API] --> 파싱 함수 실행됌.")
             if not var:
                 return None
             total    = var['wins'] + var['losses']
             win_rate = round(var['wins'] / total * 100) if total > 0 else 0
             return {
-                'tier'  : var['tier'],
-                'rank' : var['rank'],
+                'tier'        : var['tier'],
+                'rank'        : var['rank'],
                 'leaguePoints': var['leaguePoints'],
-                'wins': var['wins'],
-                'losses' : var['losses'],
-                'winRate' : win_rate,
-                'hotStreak' : var.get('hotStreak',  False),
-                'veteran'  : var.get('veteran',    False),
-                'freshBlood' : var.get('freshBlood', False),
-                'miniSeries' : var.get('miniSeries'),
+                'wins'        : var['wins'],
+                'losses'      : var['losses'],
+                'winRate'     : win_rate,
+                'hotStreak'   : var.get('hotStreak',  False),
+                'veteran'     : var.get('veteran',    False),
+                'freshBlood'  : var.get('freshBlood', False),
+                'miniSeries'  : var.get('miniSeries'),
             }
 
         solo = next((e for e in entries if e['queueType'] == 'RANKED_SOLO_5x5'), None)
         flex = next((e for e in entries if e['queueType'] == 'RANKED_FLEX_SR'),  None)
 
+        print(f"[LOL API] -> {solo}")
+        print(f"[LOL API] -> {flex}")
         return JsonResponse({
             'success': True,
             'solo'   : parsing_entry(solo),
@@ -212,11 +216,11 @@ def riot_api_getChampionMastery(request):
         )
         result = [
             {
-                'championId' : m['championId'],
+                'championId'    : m['championId'],
                 'championLevel' : m['championLevel'],
                 'championPoints': m['championPoints'],
-                'lastPlayTime': m['lastPlayTime'],
-                'tokensEarned': m.get('tokensEarned', 0),
+                'lastPlayTime'  : m['lastPlayTime'],
+                'tokensEarned'  : m.get('tokensEarned', 0),
             }
             for m in data
         ]
@@ -282,9 +286,9 @@ def riot_api_ddVersion(request):
         current  = settings.RIOT_DD_VERSION
         latest   = versions[0] if versions else None
         return JsonResponse({
-            'success' : True,
-            'current' : current,
-            'latest'  : latest,
+            'success'    : True,
+            'current'    : current,
+            'latest'     : latest,
             'is_outdated': (latest != current) if (latest and current) else False,
         })
     except RiotAPIError as e:
@@ -292,16 +296,18 @@ def riot_api_ddVersion(request):
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=500)
 
+
+
 def riot_api_champions(request):
     if request.method != 'GET':
         return JsonResponse({'success': False, 'message': '허용되지 않는 메서드'}, status=405)
 
-    lang = request.GET.get('lang', 'ko_KR')
+    lang    = request.GET.get('lang', 'ko_KR')
     version = settings.RIOT_DD_VERSION
-    url = f'https://ddragon.leagueoflegends.com/cdn/{version}/data/{lang}/champion.json'
+    url     = f'https://ddragon.leagueoflegends.com/cdn/{version}/data/{lang}/champion.json'
 
     try:
-        raw = _riot_get(url)
+        raw    = _riot_get(url)
         champs = {
             int(c['key']): {'name': c['name'], 'id': c['id']}
             for c in raw['data'].values()
@@ -316,9 +322,9 @@ def riot_api_champions(request):
 def riot_api_ddSpell(request):
     if request.method != 'GET':
         return JsonResponse({'success': False, 'message': '허용되지 않는 메서드'}, status=405)
-    lang= request.GET.get('lang', 'ko_KR')
+    lang    = request.GET.get('lang', 'ko_KR')
     version = settings.RIOT_DD_VERSION
-    url = f'https://ddragon.leagueoflegends.com/cdn/{version}/data/{lang}/summoner.json'
+    url     = f'https://ddragon.leagueoflegends.com/cdn/{version}/data/{lang}/summoner.json'
     try:
         raw = _riot_get(url)
         return JsonResponse({'success': True, 'data': raw.get('data', {})})
