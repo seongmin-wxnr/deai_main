@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/6.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
-
+# from django.core.cache import cache
 from pathlib import Path
 from django import apps
 from django.apps import *
@@ -25,10 +25,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = ''
-## riot api line
-RIOT_API_KEY = config.RIOT_API_KEY
-RIOT_DD_VERSION = '16.5.1'
+
+SECRET_KEY = 
+RIOT_API_KEY = 
+RIOT_DD_VERSION =
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -51,6 +51,12 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 ]
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "riot-cache"
+    }
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -147,28 +153,57 @@ CSRF_TRUSTED_ORIGINS = [
     'http://unmasticatory-shannon-unfrosty.ngrok-free.dev',  # ← http도 추가
 ]
 # 이메일 설정 (Gmail SMTP)
-EMAIL_BACKEND       = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_BACKEND       = ''
 EMAIL_HOST          = 'smtp.gmail.com'
-EMAIL_PORT          = 
-EMAIL_USE_TLS       = 
-EMAIL_HOST_USER     = ''   # ← 본인 Gmail 주소로 변경
-EMAIL_HOST_PASSWORD = ''      # ← Gmail 앱 비밀번호로 변경
+EMAIL_PORT          = 587
+EMAIL_USE_TLS       = True
+EMAIL_HOST_USER     = ''
+EMAIL_HOST_PASSWORD = ''     
 DEFAULT_FROM_EMAIL  = EMAIL_HOST_USER
 
-# 초기 정의 -> riot api -> valorant
 RIOT_REGION_MAP = {
 
 }
 
+VAL_TIER_MAP = {
+    0 : {'name': 'UNRANKED',   'division': ''},
+    1 : {'name': 'UNRANKED',   'division': ''},
+    2 : {'name': 'UNRANKED',   'division': ''},
+    3 : {'name': 'IRON',       'division': '1'},
+    4 : {'name': 'IRON',       'division': '2'},
+    5 : {'name': 'IRON',       'division': '3'},
+    6 : {'name': 'BRONZE',     'division': '1'},
+    7 : {'name': 'BRONZE',     'division': '2'},
+    8 : {'name': 'BRONZE',     'division': '3'},
+    9 : {'name': 'SILVER',     'division': '1'},
+    10: {'name': 'SILVER',     'division': '2'},
+    11: {'name': 'SILVER',     'division': '3'},
+    12: {'name': 'GOLD',       'division': '1'},
+    13: {'name': 'GOLD',       'division': '2'},
+    14: {'name': 'GOLD',       'division': '3'},
+    15: {'name': 'PLATINUM',   'division': '1'},
+    16: {'name': 'PLATINUM',   'division': '2'},
+    17: {'name': 'PLATINUM',   'division': '3'},
+    18: {'name': 'DIAMOND',    'division': '1'},
+    19: {'name': 'DIAMOND',    'division': '2'},
+    20: {'name': 'DIAMOND',    'division': '3'},
+    21: {'name': 'ASCENDANT',  'division': '1'},
+    22: {'name': 'ASCENDANT',  'division': '2'},
+    23: {'name': 'ASCENDANT',  'division': '3'},
+    24: {'name': 'IMMORTAL',   'division': '1'},
+    25: {'name': 'IMMORTAL',   'division': '2'},
+    26: {'name': 'IMMORTAL',   'division': '3'},
+    27: {'name': 'RADIANT',    'division': ''},
+}
 
 VAL_QUEUE_MAP = {
 
 }
 
 VAL_MAP_MAP = {
-
+,
 }
 
 VAL_AGENT_MAP = {
-   
+
 }
