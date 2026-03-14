@@ -77,6 +77,7 @@ urlpatterns = [
     path("api/val/matches/", riot_apiValorant.val_api_getMatchIDs, name='val_api_matches'),
     path("api/val/match/<str:match_id>/", riot_apiValorant.val_api_matchDetail,name='val_api_match_detail'),
     path("api/val/rank/", riot_apiValorant.val_api_getRank, name='val_api_rank'),
+    
 
     ## riot api
     ## tft
@@ -86,4 +87,5 @@ urlpatterns = [
     path("api/tft/rank/", riot_apiTFT.tft_api_getRank, name="tft_api_rank"),
     path("api/tft/matches/", riot_apiTFT.tft_api_getMatchIDs, name="tft_api_matches"),
     path("api/tft/match/<str:match_id>/", riot_apiTFT.tft_api_matchDetail, name="tft_api_match_detail"),
+    path('api/tft/ranks/bulk/', riot_apiTFT.tft_api_bulk_ranks, name='tft_bulk_ranks'),
 ]
