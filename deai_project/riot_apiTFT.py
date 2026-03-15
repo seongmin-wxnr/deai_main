@@ -9,10 +9,6 @@ from django.shortcuts  import render
 from django.conf       import settings
 from django.core.cache import cache
 
-
-# ══════════════════════════════════════════════════════════════
-# CDragon 동반자(전설이) 이미지 캐시
-# ══════════════════════════════════════════════════════════════
 _COMPANION_CACHE: dict  = {}
 _COMPANION_LOADED: bool = False
 
