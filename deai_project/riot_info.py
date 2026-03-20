@@ -38,16 +38,12 @@ def _db_delete(key: str):
         pass
 
 def _cached_get(key: str):
-    """① 메모리 → ② Django cache → ③ DB 순으로 조회"""
-    # ① 메모리 (프로세스 내)
     if key in _MEM_CACHE:
         return _MEM_CACHE[key]
-    # ② Django cache (Redis/Memcached)
     data = cache.get(key)
     if data is not None:
         _MEM_CACHE[key] = data
         return data
-    # ③ DB
     data = _db_get(key)
     if data is not None:
         _MEM_CACHE[key] = data
@@ -56,7 +52,6 @@ def _cached_get(key: str):
     return None
 
 def _cached_set(key: str, data, version: str = ''):
-    """메모리 + Django cache + DB 동시 저장"""
     _MEM_CACHE[key] = data
     cache.set(key, data, CACHE_TTL)
     _db_set(key, data, version=version)
@@ -401,15 +396,15 @@ def info_tft_champions(request):
         return JsonResponse(cached)
 
     try:
-        # CDragon/ddragon 모두 7코스트를 cost=5로 잘못 저장 → apiName 기준 수동 보정
+        # CDragon/ddragon 모두 7코스트를 cost=5로 잘못
         COST7_API_NAMES = {
-            'TFT16_Galio',        # 갈리오
-            'TFT16_BaronNashor',  # 내셔 남작
-            'TFT16_Ryze',         # 라이즈
-            'TFT16_Lucian',       # 루시안과 세나
-            'TFT16_Volibear',     # 볼리베어
-            'TFT16_Brock',        # 브록
-            'TFT16_Sylas',        # 사일러스
+            'TFT16_Galio',       
+            'TFT16_BaronNashor',  
+            'TFT16_Ryze',    
+            'TFT16_Lucian',       
+            'TFT16_Volibear',
+            'TFT16_Brock', 
+            'TFT16_Sylas', 
         }
 
         def tc_img(path):
@@ -434,7 +429,6 @@ def info_tft_champions(request):
             if not api_name.startswith('TFT16_'):
                 continue
             raw_cost = c.get('cost', 0)
-            # cost=11은 소환 유닛 제외, cost 1~5만 허용 (7코스트도 5로 저장돼 있음)
             if raw_cost < 1 or raw_cost > 5:
                 continue
             # 7코스트 수동 보정
@@ -467,29 +461,20 @@ def info_tft_items(request):
     try:
         cd_data = _get_cdragon('https://raw.communitydragon.org/latest/cdragon/tft/ko_kr.json', 'cdragon_tft_ko_kr')
         all_items = cd_data.get('items', [])
-
-        # ── Set16 공식 아이템 화이트리스트 ──────────────────────────────
-        # setData에서 mutator='TFTSet16' (표준 랭크 게임) 아이템 ID 셋 추출
-        # setData는 list 타입
         set_data = cd_data.get('setData', [])
         set16_item_ids = set()
         for s in (set_data if isinstance(set_data, list) else set_data.values()):
             if s.get('name') == 'Set16' and s.get('mutator') == 'TFTSet16':
                 set16_item_ids = set(s.get('items', []))
                 break
-
-        # 9개 기본 부품 apiName
         BASIC_COMPONENTS = {
             'TFT_Item_BFSword', 'TFT_Item_RecurveBow', 'TFT_Item_ChainVest',
             'TFT_Item_NeedlesslyLargeRod', 'TFT_Item_TearOfTheGoddess',
             'TFT_Item_NegatronCloak', 'TFT_Item_GiantsBelt',
             'TFT_Item_SparringGloves', 'TFT_Item_Spatula',
         }
-        # 상징 조합 재료: Set16은 프라이팬 또는 뒤집개 + 기본 부품
         EMBLEM_BASES = {'TFT_Item_FryingPan', 'TFT_Item_Spatula'}
         EMBLEM_COMP  = BASIC_COMPONENTS | EMBLEM_BASES
-
-        # apiName → {name, icon} 맵 (조합법 표시용)
         item_map = {
             i['apiName']: {'name': i.get('name',''), 'icon': i.get('icon','')}
             for i in all_items if i.get('apiName')
@@ -526,13 +511,7 @@ def info_tft_items(request):
             s = re.sub(r'@[^@]+@', '?', s)
             s = re.sub(r'\n{3,}', '\n\n', s).strip()
             return s[:300]
-
-        # effects → 스탯 텍스트 생성
-        # ── CDragon effects 실측 값 형태 ────────────────────────────────
-        # 소수(0~1): AD, CritDamageToGive, StatOmnivamp, AllyHealing → *100 해서 %로 표시
-        # 정수 %: AS, CritChance, Omnivamp                           → 그대로 % 표시
-        # 정수 수치: AP, Armor, MagicResist, Health, HP, Mana         → 그대로 표시
-        # (레이블, 변환방식) 변환방식: 'pct_conv'=소수→% | 'int_pct'=정수% | 'int'=정수
+        
         STAT_MAP = {
             'AD'              : ('공격력',       'pct_conv'),
             'AP'              : ('주문력',       'int'),
@@ -597,8 +576,6 @@ def info_tft_items(request):
             icon    = item.get('icon', '')
             comp    = item.get('composition') or []
             effects = item.get('effects') or {}
-
-            # ── Set16 화이트리스트 필터 ──
             # 화이트리스트가 로드됐으면 반드시 포함된 것만 처리
             if set16_item_ids and api not in set16_item_ids:
                 continue
