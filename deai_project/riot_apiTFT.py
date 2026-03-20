@@ -50,11 +50,6 @@ def _companion_img_url(content_id: str) -> str:
     _load_companion_cache()
     return _COMPANION_CACHE.get(content_id, '')
 
-
-# ══════════════════════════════════════════════════════════════
-# 상수
-# ══════════════════════════════════════════════════════════════
-
 # tft_game_type (match API) → 한글
 # queue_id fallback: 1090=일반, 1100=솔로랭크, 1130=하이퍼롤, 1160=더블업
 TFT_QUEUE_KO = {
