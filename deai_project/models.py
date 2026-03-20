@@ -218,3 +218,69 @@ class UserReport(models.Model):
 
     class Meta:
         db_table = 'user_report'
+
+from django.db import models
+from django.utils import timezone
+
+
+class RiotDataCache(models.Model):
+    # cache_key 예시:
+    #   info_lol_champs_ko_KR
+    #   info_lol_items_ko_KR_<hash>
+    #   info_tft_champs_ko_KR
+    #   info_tft_items_ko_KR
+    #   cdragon_tft_ko_kr         
+    #   ddragon_version
+
+    ## 중복 로드 방지 db 캐시 테이블
+    cache_key   = models.CharField(max_length=120, unique=True, db_index=True,
+                                   verbose_name='캐시 키')
+    data        = models.JSONField(verbose_name='JSON 데이터')
+    version     = models.CharField(max_length=20, blank=True, default='',
+                                   verbose_name='데이터 버전(패치)')
+    created_at  = models.DateTimeField(auto_now_add=True, verbose_name='최초 저장')
+    updated_at  = models.DateTimeField(auto_now=True,     verbose_name='최근 갱신')
+    expires_at  = models.DateTimeField(null=True, blank=True,
+                                       verbose_name='만료 시각 (null=영구)')
+
+    class Meta:
+        db_table     = 'riot_data_cache'
+        verbose_name = 'Riot 데이터 캐시'
+
+    def __str__(self):
+        return f'{self.cache_key} (v{self.version}, {self.updated_at:%Y-%m-%d %H:%M})'
+
+    def is_expired(self) -> bool:
+        if self.expires_at is None:
+            return False
+        return timezone.now() > self.expires_at
+
+    @classmethod
+    def get(cls, key: str):
+        """캐시 조회. 없거나 만료됐으면 None 반환."""
+        try:
+            obj = cls.objects.get(cache_key=key)
+            if obj.is_expired():
+                return None
+            return obj.data
+        except cls.DoesNotExist:
+            return None
+
+    @classmethod
+    def set(cls, key: str, data, version: str = '', ttl_hours: int = 6):
+        """캐시 저장/갱신."""
+        from datetime import timedelta
+        expires = timezone.now() + timedelta(hours=ttl_hours) if ttl_hours else None
+        cls.objects.update_or_create(
+            cache_key=key,
+            defaults={
+                'data'      : data,
+                'version'   : version,
+                'expires_at': expires,
+            }
+        )
+    @classmethod
+    def delete_key(cls, key: str):
+        cls.objects.filter(cache_key=key).delete()
+
+## + rank 
