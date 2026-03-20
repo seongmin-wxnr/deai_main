@@ -1,4 +1,4 @@
-Config
+### Config
 - Riot Game API KEY = https://developer.riotgames.com
 - Django KEY = "your project key.."
 - RIOT DD VERSION = 'most recent dd verison'
@@ -8,7 +8,7 @@ Config
 - EMAIL_HOST_PASSWORD = 'password (not your gmail password)'
 - DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
-deai.gg
+### about deai.gg
 
 deai.gg is a test web platform that supports party recruitment and match history lookup for Riot Games titles such as League of Legends, VALORANT, and Teamfight Tactics.
 
