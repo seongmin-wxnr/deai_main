@@ -8,6 +8,10 @@ from django.shortcuts import render
 from django.conf import settings
 from django.core.cache import cache
 
+###########################3
+## 미완성 기능 페이지 입니다###
+###############################3
+
 import requests
 # external api define
 CACHE_TTL    = 60 * 60 * 6 
