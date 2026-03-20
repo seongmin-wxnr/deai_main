@@ -12,7 +12,7 @@ deai.gg
 
 deai.gg is a test web platform that supports party recruitment and match history lookup for Riot Games titles such as League of Legends, VALORANT, and Teamfight Tactics.
 
-At this time, VALORANT is not yet supported because it requires approval for the Riot Games API as well as an RSO application. If approval is not granted, I am considering either excluding the VALORANT match history feature or replacing it with an alternative API.
+At this time, VALORANT is not yet supported because it requires approval for the Riot Games API as well as an RSO application.
 
 Currently, I have implemented the basic structure for match history lookup for League of Legends and Teamfight Tactics using other Riot Games APIs. Additionally, I have created pages that provide both general and detailed information (such as items, synergies, champions, weapons, etc) for all three games: League of Legends, Teamfight Tactics, and VALORANT. Since access to VALORANT data is limited, so I used an alternative API (valorant-api) to build the VALORANT-related information pages.
 
