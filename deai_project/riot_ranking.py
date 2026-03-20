@@ -10,11 +10,10 @@ from django.core.cache import cache
 
 import requests
 # external api define
-CACHE_TTL    = 60 * 60 * 6   # 6시간 Django 캐시
+CACHE_TTL    = 60 * 60 * 6 
 DB_TTL_HOURS = 6   
 
 def _db_get(key: str):
-    """DB 캐시 조회"""
     try:
         from .models import RiotDataCache
         return RiotDataCache.get(key)
@@ -22,7 +21,6 @@ def _db_get(key: str):
         return None
 
 def _db_set(key: str, data, version: str = '', ttl_hours: int = DB_TTL_HOURS):
-    """DB 캐시 저장"""
     try:
         from .models import RiotDataCache
         RiotDataCache.set(key, data, version=version, ttl_hours=ttl_hours)
@@ -38,16 +36,12 @@ def _db_delete(key: str):
         pass
 
 def _cached_get(key: str):
-    """① 메모리 → ② Django cache → ③ DB 순으로 조회"""
-    # ① 메모리 (프로세스 내)
     if key in _MEM_CACHE:
         return _MEM_CACHE[key]
-    # ② Django cache (Redis/Memcached)
     data = cache.get(key)
     if data is not None:
         _MEM_CACHE[key] = data
         return data
-    # ③ DB
     data = _db_get(key)
     if data is not None:
         _MEM_CACHE[key] = data
@@ -56,13 +50,11 @@ def _cached_get(key: str):
     return None
 
 def _cached_set(key: str, data, version: str = ''):
-    """메모리 + Django cache + DB 동시 저장"""
     _MEM_CACHE[key] = data
     cache.set(key, data, CACHE_TTL)
     _db_set(key, data, version=version)
 
 def _cached_delete(key: str):
-    """세 계층 모두 삭제"""
     _MEM_CACHE.pop(key, None)
     cache.delete(key)
     _db_delete(key)
@@ -73,6 +65,7 @@ def _get(url: str) -> dict:
     req = urllib.request.Request(url, headers={'User-Agent': 'DeaiWeb/1.0'})
     with urllib.request.urlopen(req, timeout=8) as res:
         return json.loads(res.read().decode('utf-8'))
+        
 ## BASE URL OR MAPS
 BASE = "https://kr.api.riotgames.com"
 
@@ -142,7 +135,7 @@ def _error_response(e: RiotAPIError) -> JsonResponse:
     )
 
 RIOT_API_KEY  = getattr(settings, 'RIOT_API_KEY', '')
-# 한국 서버: kr.api.riotgames.com / ASIA 라우팅: asia.api.riotgames.com
+# 한국 서버 kr.api.riotgames.com / ASIA 라우팅: asia.api.riotgames.com
 LOL_API_BASE  = 'https://kr.api.riotgames.com'
 TFT_API_BASE  = 'https://kr.api.riotgames.com'
 VAL_API_BASE  = 'https://kr.api.riotgames.com'
@@ -162,7 +155,6 @@ def _riot_get(url: str) -> dict:
         return json.loads(res.read().decode('utf-8'))
  
 def _riot_get_requests(url: str) -> dict:
-    """Riot API GET — requests 라이브러리 버전"""
     try:
         import requests as _req
         resp = _req.get(url, headers={
@@ -181,19 +173,14 @@ def _format_rank(tier: str, division: str) -> str:
         'MASTER':'마스터','GRANDMASTER':'그랜드마스터','CHALLENGER':'챌린저',
     }
     if not tier:
-        return '챌린저'   # tier 빈 문자열 대비 (challenger endpoint는 모두 챌린저)
+        return '챌린저'   # tier )
     label = TIER_KO.get(tier.upper(), tier)
-    # 마스터 이상은 division 표시 안 함
     if tier.upper() in ('MASTER', 'GRANDMASTER', 'CHALLENGER'):
         return label
     return f'{label} {division}'
  
  
 def _entries_to_list(entries: list, tier_from_parent: str = '', limit: int = 200) -> list:
-    """leagueEntries → 정렬된 순위 리스트
-    - tier: entries에 없고 응답 최상위 data['tier']에만 있음 → tier_from_parent로 전달
-    - summonerName: deprecated → puuid 필드 또는 riotIdGameName 사용
-    """
     entries.sort(key=lambda e: (-e.get('leaguePoints', 0)))
     result = []
     tier = tier_from_parent.upper()
@@ -203,9 +190,6 @@ def _entries_to_list(entries: list, tier_from_parent: str = '', limit: int = 200
         losses  = e.get('losses', 0)
         total   = wins + losses
         winrate = round(wins / total * 100) if total else 0
-
-        # 이름 처리: riotIdGameName > summonerName(deprecated) > '?'
-        # puuid를 이름으로 쓰지 않음 (노출 방지)
         name    = (e.get('riotIdGameName') or e.get('summonerName') or '').strip()
         tag     = (e.get('riotIdTagline')  or '').strip()
         puuid   = e.get('puuid', '')
@@ -216,7 +200,7 @@ def _entries_to_list(entries: list, tier_from_parent: str = '', limit: int = 200
             'puuid'     : puuid,
             'name'      : name if name else '?',
             'tagLine'   : tag,
-            'iconId'    : 1,   # _resolve_names_by_puuid에서 채워짐
+            'iconId'    : 1, 
             'tier'      : tier,
             'division'  : div,
             'rankLabel' : _format_rank(tier, div),
@@ -232,10 +216,6 @@ def _entries_to_list(entries: list, tier_from_parent: str = '', limit: int = 200
 
 
 def _resolve_names_by_puuid(entries: list, max_resolve: int = 500) -> list:
-    """puuid → ASIA API(이름) + KR API(iconId) 병렬 조회
-    - ThreadPoolExecutor로 동시에 최대 20개 요청
-    - 캐시: puuid → {name, tagLine, iconId} 메모리 보관
-    """
     ASIA_BASE = 'https://asia.api.riotgames.com'
 
     if not hasattr(_resolve_names_by_puuid, '_cache'):
@@ -244,7 +224,6 @@ def _resolve_names_by_puuid(entries: list, max_resolve: int = 500) -> list:
 
     to_resolve = [
         e for e in entries[:max_resolve]
-        # 이름이 없거나 iconId가 기본값(1)인 항목 재처리
         if (e['name'] == '?' or e.get('iconId', 1) == 1)
         and e.get('puuid')
         and e['puuid'] not in name_cache
@@ -255,7 +234,7 @@ def _resolve_names_by_puuid(entries: list, max_resolve: int = 500) -> list:
         puuid = e.get('puuid', '')
         if puuid and puuid in name_cache:
             cached = name_cache[puuid]
-            if cached.get('name'):               # 이름이 실제로 있는 캐시만 적용
+            if cached.get('name'):
                 e['name']      = cached['name']
                 e['tagLine']   = cached['tagLine']
                 e['iconId']    = cached.get('iconId', 1)
@@ -274,8 +253,6 @@ def _resolve_names_by_puuid(entries: list, max_resolve: int = 500) -> list:
             acc       = _riot_get_requests(url)
             game_name = acc.get('gameName', '')
             tag_line  = acc.get('tagLine', '')
-
-            # 2) KR: summoner 정보 (iconId)
             icon_id = 1
             try:
                 s_url   = f'{LOL_API_BASE}/lol/summoner/v4/summoners/by-puuid/{puuid}'
@@ -298,23 +275,16 @@ def _resolve_names_by_puuid(entries: list, max_resolve: int = 500) -> list:
                 e['tagLine']   = tag_line
                 e['iconId']    = icon_id
                 e['rankLabel'] = _format_rank(e['tier'], e['division'])
-                # 이름이 성공적으로 조회된 경우에만 캐시 저장
                 name_cache[puuid] = {
                     'name'   : game_name,
                     'tagLine': tag_line,
                     'iconId' : icon_id,
                 }
-            # 실패한 경우 name은 '?'로 유지, puuid는 절대 노출 안 함
 
-    return entries  # ← 누락됐던 반환문
+    return entries 
 
 
 def info_lol_ranking(request):
-    """
-    솔로랭크: queue=RANKED_SOLO_5x5
-    자유랭크: queue=RANKED_FLEX_SR
-    tier: challenger | grandmaster | master
-    """
     queue = request.GET.get('queue', 'RANKED_SOLO_5x5')
     tier  = request.GET.get('tier', 'challenger').lower()
     cache_key = f'lol_ranking_{queue}_{tier}'
@@ -339,7 +309,6 @@ def info_lol_ranking(request):
         entries  = data.get('entries', [])
         tier_str = data.get('tier', tier.upper())
         ranked   = _entries_to_list(entries, tier_from_parent=tier_str, limit=500)
-        # summonerName deprecated → puuid로 이름 조회
         ranked   = _resolve_names_by_puuid(ranked, max_resolve=500)
         result   = {
             'success' : True,
@@ -348,7 +317,6 @@ def info_lol_ranking(request):
             'total'   : len(ranked),
             'entries' : ranked,
         }
-        # 랭킹 캐시는 1시간 (이름 없는 상태로 장기 캐싱 방지)
         _MEM_CACHE[cache_key] = result
         cache.set(cache_key, result, 60 * 60)
         _db_set(cache_key, result, ttl_hours=1)
@@ -361,11 +329,6 @@ def info_lol_ranking(request):
         return JsonResponse({'success': False, 'message': str(e)}, status=500)
 
 def info_tft_ranking(request):
-    """
-    솔로:      queue=RANKED_TFT
-    더블업:    queue=RANKED_TFT_DOUBLE_UP
-    tier: challenger | grandmaster | master
-    """
     queue = request.GET.get('queue', 'RANKED_TFT')
     tier  = request.GET.get('tier', 'challenger').lower()
     cache_key = f'tft_ranking_{queue}_{tier}'
@@ -407,10 +370,6 @@ def info_tft_ranking(request):
         print(f'[TFT RANKING] {e}')
         return JsonResponse({'success': False, 'message': str(e)}, status=500)
 def info_val_ranking(request):
-    """
-    Valorant 경쟁전 리더보드 (현재 시즌 자동 감지)
-    actId: 최신 act ID
-    """
     cache_key = 'val_ranking_kr'
     cached = _cached_get(cache_key)
     if cached:
@@ -424,17 +383,14 @@ def info_val_ranking(request):
         content_url  = f'{VAL_API_BASE}/val/content/v1/contents?locale=ko-KR'
         content_data = _riot_get_requests(content_url)
         acts = content_data.get('acts', [])
-        # 현재 활성 act 찾기
         current_act = next((a for a in acts if a.get('isActive')), None)
         if not current_act:
-            # 활성 act 없으면 가장 최신 ID 사용
             current_act = acts[-1] if acts else {}
         act_id = current_act.get('id', '')
  
         if not act_id:
             return JsonResponse({'success': False, 'message': 'Act ID 조회 실패'}, status=500)
- 
-        # 2) 리더보드 조회 (최대 200명)
+
         lb_url = f'{VAL_API_BASE}/val/ranked/v1/leaderboards/by-act/{act_id}?size=200&startIndex=0'
         lb_data = _riot_get_requests(lb_url)
  
@@ -511,7 +467,6 @@ def info_ranking_cache_clear(request):
         djcache.delete(key)
         _db_delete(key)
         cleared.append(key)
-    # resolve_names 캐시도 초기화
     if hasattr(_resolve_names_by_puuid, '_cache'):
         _resolve_names_by_puuid._cache.clear()
     return JsonResponse({'success': True, 'cleared': cleared, 'count': len(cleared)})
@@ -534,8 +489,6 @@ def info_lol_ranking_debug(request):
         })
     except Exception as e:
         return JsonResponse({'error': str(e)})
-
-# ── 숙련도 챔피언 TOP 3 (puuid 기반) ──────────────────────────────
 def info_mastery_by_puuid(request):
     """
     puuid 로 숙련도 상위 3 챔피언 조회
@@ -563,7 +516,7 @@ def info_mastery_by_puuid(request):
             summoner_id  = summoner.get('id', '')
             mastery_url  = f'{TFT_API_BASE}/tft/champion-mastery/v1/by-summoner/{summoner_id}/top?count=3'
         else:
-            # LoL v4 — puuid로 직접 조회
+            # LoL v4 
             mastery_url = f'{LOL_API_BASE}/lol/champion-mastery/v4/by-puuid/{puuid}/top?count=3'
 
         masteries = _riot_get_requests(mastery_url)
@@ -575,7 +528,7 @@ def info_mastery_by_puuid(request):
         except Exception:
             dd_ver = '15.1.1'
 
-        # championId → key(영문명) 맵
+        # championId
         try:
             champ_data = _riot_get_requests(
                 f'https://ddragon.leagueoflegends.com/cdn/{dd_ver}/data/ko_KR/champion.json'
