@@ -3,6 +3,9 @@ from . import views
 from . import riot_apiViews
 from . import riot_apiValorant
 from . import riot_apiTFT
+from . import riot_info
+from . import riot_ranking
+
 import urllib.request
 import urllib.error
 import urllib.parse
@@ -15,6 +18,7 @@ urlpatterns = [
     path("Deai_main/",views.Main_rq,name='Deai_main'),
     path("aboutDeai/", views.aboutDeai, name='aboutDeai'),
     path("createAuthor/", views.createAuthor , name="createAuthor"),
+    path("RiotInfo/" , riot_info.infoPageRender , name="RiotInfo"),
 
     ## API space
     
@@ -54,6 +58,9 @@ urlpatterns = [
     path("api/auth/verify-code/", views.api_verify_code, name='api_verify_code'),
     path("api/game/stats/" , views.api_game_stats, name="api/game/stats/"),
 
+    ## cache
+    path('api/info/cache/clear/', riot_info.info_cache_clear),
+
     ## riot api space
     # riot/lol/ + user
     path("RiotSearch/", riot_apiViews.riotSearchPage_rendering,name='riot_lol_search'),
@@ -88,4 +95,29 @@ urlpatterns = [
     path("api/tft/matches/", riot_apiTFT.tft_api_getMatchIDs, name="tft_api_matches"),
     path("api/tft/match/<str:match_id>/", riot_apiTFT.tft_api_matchDetail, name="tft_api_match_detail"),
     path('api/tft/ranks/bulk/', riot_apiTFT.tft_api_bulk_ranks, name='tft_bulk_ranks'),
+
+
+    ## ddragon 
+    ## all games
+    # riot info
+    path('riot/info/',                    riot_info.infoPageRender,      name='info_page'),
+    path('api/info/version/',             riot_info.info_dd_version,     name='info_version'),
+
+    path('api/info/lol/champions/',       riot_info.info_lol_champions,  name='info_lol_champs'),
+    path('api/info/lol/items/',           riot_info.info_lol_items,      name='info_lol_items'),
+
+    path('api/info/tft/champions/',       riot_info.info_tft_champions,  name='info_tft_champs'),
+    path('api/info/tft/items/',           riot_info.info_tft_items,      name='info_tft_items'),
+
+    ## riot api 
+    ## riot ranking s
+    ## c ,g .. valorant
+    path('api/ranking/lol/', riot_ranking.info_lol_ranking),
+    path('api/ranking/val/', riot_ranking.info_val_ranking),
+    path('api/ranking/tft/', riot_ranking.info_tft_ranking),
+    path('RiotRanking/',     riot_ranking.riot_api_rankRendering, name='RiotRanking'),
+    path('api/ranking/lol/debug/', riot_ranking.info_lol_ranking_debug),
+    path('api/ranking/cache/clear/', riot_ranking.info_ranking_cache_clear),
+    path('api/ranking/mastery/', riot_ranking.info_mastery_by_puuid),
 ]
+    
