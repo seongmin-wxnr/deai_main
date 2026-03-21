@@ -100,14 +100,14 @@ urlpatterns = [
     ## ddragon 
     ## all games
     # riot info
-    path('riot/info/',                    riot_info.infoPageRender,      name='info_page'),
-    path('api/info/version/',             riot_info.info_dd_version,     name='info_version'),
+    path('riot/info/', riot_info.infoPageRender, name='info_page'),
+    path('api/info/version/', riot_info.info_dd_version,name='info_version'),
 
-    path('api/info/lol/champions/',       riot_info.info_lol_champions,  name='info_lol_champs'),
-    path('api/info/lol/items/',           riot_info.info_lol_items,      name='info_lol_items'),
+    path('api/info/lol/champions/',riot_info.info_lol_champions,name='info_lol_champs'),
+    path('api/info/lol/items/', riot_info.info_lol_items, name='info_lol_items'),
 
-    path('api/info/tft/champions/',       riot_info.info_tft_champions,  name='info_tft_champs'),
-    path('api/info/tft/items/',           riot_info.info_tft_items,      name='info_tft_items'),
+    path('api/info/tft/champions/', riot_info.info_tft_champions,name='info_tft_champs'),
+    path('api/info/tft/items/', riot_info.info_tft_items,name='info_tft_items'),
     path('api/info/tft/augments/', riot_info.info_tft_augments),
 
     ## riot api 
