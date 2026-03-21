@@ -828,6 +828,83 @@
       color:#b497e0; letter-spacing:.5px;
     }
     .tim-trait-link img { width:16px; height:16px; object-fit:contain; }
+
+    /* ── 증강 그리드 ── */
+    .aug-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 10px;
+    }
+    .aug-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .aug-card:hover { border-color: var(--text-muted); background: var(--bg3); transform: translateY(-2px); }
+    .aug-card.tier-silver   { border-left: 3px solid #9e9e9e; }
+    .aug-card.tier-gold     { border-left: 3px solid #f9a825; }
+    .aug-card.tier-prismatic{ border-left: 3px solid #ab47bc; }
+    .aug-img {
+      width: 46px; height: 46px; flex-shrink: 0;
+      border-radius: 4px; overflow: hidden;
+      background: var(--bg3); border: 1px solid var(--border);
+    }
+    .aug-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .aug-info { flex: 1; min-width: 0; }
+    .aug-name {
+      font-size: 12px; font-weight: 700; color: var(--text-bright);
+      line-height: 1.3; word-break: keep-all;
+    }
+    .aug-tier-badge {
+      display: inline-block; font-size: 9px; font-weight: 700;
+      letter-spacing: 1px; text-transform: uppercase;
+      padding: 2px 6px; border-radius: 2px; margin-top: 4px;
+    }
+    .aug-tier-silver   { background: rgba(158,158,158,.15); color: #bdbdbd; border: 1px solid rgba(158,158,158,.3); }
+    .aug-tier-gold     { background: rgba(249,168,37,.15);  color: #f9a825; border: 1px solid rgba(249,168,37,.3); }
+    .aug-tier-prismatic{ background: rgba(171,71,188,.15);  color: #ce93d8; border: 1px solid rgba(171,71,188,.3); }
+    .aug-desc {
+      font-size: 11px; color: var(--text-muted); margin-top: 5px;
+      line-height: 1.5; display: -webkit-box;
+      -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    /* 증강 필터 버튼 색상 */
+    #tft-aug-filters .aug-silver.active   { color: #bdbdbd; border-color: #9e9e9e; background: rgba(158,158,158,.12); }
+    #tft-aug-filters .aug-gold.active     { color: #f9a825; border-color: #f9a825; background: rgba(249,168,37,.12); }
+    #tft-aug-filters .aug-prismatic.active{ color: #ce93d8; border-color: #ab47bc; background: rgba(171,71,188,.12); }
+    /* 증강 모달 */
+    #aug-modal-overlay {
+      display: none; position: fixed; inset: 0; z-index: 3000;
+      background: rgba(0,0,0,.82); backdrop-filter: blur(6px);
+    }
+    #aug-modal-overlay.open { display: flex; align-items: center; justify-content: center; }
+    .aug-modal {
+      background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+      max-width: 480px; width: 90%; padding: 28px; position: relative;
+    }
+    .aug-modal-close {
+      position: absolute; top: 14px; right: 16px;
+      font-size: 20px; color: var(--text-muted); cursor: pointer; background: none; border: none;
+    }
+    .aug-modal-close:hover { color: var(--text-bright); }
+    .aug-modal-header { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+    .aug-modal-img {
+      width: 60px; height: 60px; border-radius: 6px; overflow: hidden;
+      border: 1px solid var(--border); background: var(--bg3); flex-shrink: 0;
+    }
+    .aug-modal-img img { width: 100%; height: 100%; object-fit: cover; }
+    .aug-modal-name { font-size: 18px; font-weight: 700; color: var(--text-bright); }
+    .aug-modal-desc {
+      font-size: 13px; color: var(--text-sub); line-height: 1.7;
+      white-space: pre-line; border-top: 1px solid var(--border); padding-top: 14px;
+    }
+
   </style>
 </head>
 <body>
@@ -1140,6 +1217,7 @@
         <button class="tft-subtab" onclick="showTftTab('champions',this)">챔피언</button>
         <button class="tft-subtab" onclick="showTftTab('synergies',this)">시너지</button>
         <button class="tft-subtab" onclick="showTftTab('items',this)">아이템</button>
+        <button class="tft-subtab" onclick="showTftTab('augments',this)">증강(개발중인 기능)</button>
       </nav>
 
       <!-- ── 개요 탭 ── -->
@@ -1216,6 +1294,27 @@
         </div>
         <div class="tip-box">
           <strong>💡 팁</strong> — TFT에서 골드를 희생하며 무리한 리롤보다 자연스러운 레벨업과 이자 수익을 통한 안정적인 성장이 중요합니다. 특히 초반 10골드 이자를 꾸준히 유지하는 습관을 기르세요.
+        </div>
+      </div>
+
+
+      <!-- ── 증강 탭 ── -->
+      <div class="tft-subsection" id="tft-tab-augments">
+        <div>
+          <div class="grid-header">
+            <div>
+              <div class="sec-label">AUGMENTS</div>
+              <div class="grid-title">TFT 증강 목록 (Set 16)</div>
+            </div>
+            <div class="filter-row" id="tft-aug-filters">
+              <button class="filter-btn active" onclick="filterTftAug('all',this)">전체</button>
+              <button class="filter-btn aug-silver" onclick="filterTftAug('silver',this)">실버</button>
+              <button class="filter-btn aug-gold"   onclick="filterTftAug('gold',this)">골드</button>
+              <button class="filter-btn aug-prismatic" onclick="filterTftAug('prismatic',this)">프리즘</button>
+            </div>
+          </div>
+          <div id="tft-aug-count" style="font-size:11px;color:var(--text-muted);margin-top:8px;letter-spacing:1px;"></div>
+          <div class="aug-grid" id="tft-aug-grid" style="margin-top:14px;"></div>
         </div>
       </div>
 
@@ -1692,6 +1791,7 @@ function showTftTab(tab, btn) {
   if (tab === 'champions') loadTftChamps();
   else if (tab === 'synergies') loadTftSynergies();
   else if (tab === 'items') loadTftItems();
+  else if (tab === 'augments') loadTftAugments();
 }
 
 // ══════════════════════════════════════════
@@ -2637,6 +2737,83 @@ function selectCmSkill(idx) {
       ${stats.length ? `<div class="cm-skill-stats">${stats.join('')}</div>` : ''}
     </div>`;
 }
+
+
+// ══════════════════════════════════════════
+// TFT 증강
+// ══════════════════════════════════════════
+let TFT_AUGMENTS   = [];
+let tftAugFilter   = 'all';
+
+async function loadTftAugments() {
+  if (TFT_AUGMENTS.length > 0) { renderTftAugments(); return; }
+  document.getElementById('tft-aug-grid').innerHTML =
+    '<div style="padding:40px;text-align:center;color:var(--text-muted);letter-spacing:2px;font-size:12px;">증강 불러오는 중…</div>';
+  try {
+    const res  = await fetch('/api/info/tft/augments/?lang=ko_KR');
+    const data = await res.json();
+    if (!data.success) throw new Error(data.message);
+    TFT_AUGMENTS = data.augments;
+    renderTftAugments();
+  } catch(e) {
+    document.getElementById('tft-aug-grid').innerHTML =
+      `<div style="padding:40px;text-align:center;color:var(--red);font-size:13px;">증강 로드 실패: ${e.message}</div>`;
+  }
+}
+
+function filterTftAug(tier, btn) {
+  tftAugFilter = tier;
+  setActiveFilter(document.getElementById('tft-aug-filters'), btn);
+  renderTftAugments();
+}
+
+function renderTftAugments() {
+  const grid     = document.getElementById('tft-aug-grid');
+  const countEl  = document.getElementById('tft-aug-count');
+  const filtered = tftAugFilter === 'all'
+    ? TFT_AUGMENTS
+    : TFT_AUGMENTS.filter(a => a.tier === tftAugFilter);
+
+  countEl.textContent = `${filtered.length}개 표시 중 (전체 ${TFT_AUGMENTS.length}개)`;
+
+  if (!filtered.length) {
+    grid.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted);">해당 등급의 증강이 없습니다.</div>';
+    return;
+  }
+
+  grid.innerHTML = filtered.map(a => `
+    <div class="aug-card tier-${a.tier}" onclick="openAugModal('${a.id.replace(/'/g,"\'")}')">
+      <div class="aug-img">
+        <img src="${a.img}" alt="${a.name}" loading="lazy" onerror="this.parentElement.innerHTML='✨'"/>
+      </div>
+      <div class="aug-info">
+        <div class="aug-name">${a.name}</div>
+        <span class="aug-tier-badge aug-tier-${a.tier}">${a.tierKo}</span>
+        ${a.desc ? `<div class="aug-desc">${a.desc.replace(/\n/g,'<br>')}</div>` : ''}
+      </div>
+    </div>`).join('');
+}
+
+function openAugModal(id) {
+  const aug = TFT_AUGMENTS.find(a => a.id === id);
+  if (!aug) return;
+  document.getElementById('aug-modal-img').src         = aug.img;
+  document.getElementById('aug-modal-img').alt         = aug.name;
+  document.getElementById('aug-modal-name').textContent = aug.name;
+  document.getElementById('aug-modal-badge').innerHTML  =
+    `<span class="aug-tier-badge aug-tier-${aug.tier}">${aug.tierKo}</span>`;
+  document.getElementById('aug-modal-desc').textContent = aug.desc || '설명 없음';
+  document.getElementById('aug-modal-overlay').classList.add('open');
+}
+
+function closeAugModal(e) {
+  if (!e || e.target === document.getElementById('aug-modal-overlay'))
+    document.getElementById('aug-modal-overlay').classList.remove('open');
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.getElementById('aug-modal-overlay')?.classList.remove('open');
+});
+
 </script>
 <div id="item-modal-overlay" onclick="if(event.target===this)closeItemModal()">
   <div id="item-modal">
@@ -2846,5 +3023,23 @@ function selectCmSkill(idx) {
     </div>
   </div>
 </div>
+
+<!-- ═══ TFT 증강 모달 ═══ -->
+<div id="aug-modal-overlay" onclick="closeAugModal(event)">
+  <div class="aug-modal" onclick="event.stopPropagation()">
+    <button class="aug-modal-close" onclick="closeAugModal()">✕</button>
+    <div class="aug-modal-header">
+      <div class="aug-modal-img">
+        <img id="aug-modal-img" src="" alt="">
+      </div>
+      <div>
+        <div class="aug-modal-name" id="aug-modal-name"></div>
+        <div style="margin-top:6px;" id="aug-modal-badge"></div>
+      </div>
+    </div>
+    <div class="aug-modal-desc" id="aug-modal-desc"></div>
+  </div>
+</div>
+
 </body>
 </html>
