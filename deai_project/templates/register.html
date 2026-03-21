@@ -39,6 +39,11 @@
         <div class="step-dot" id="dot-3">3</div>
         <span class="step-label" id="label-3">약관 동의</span>
       </div>
+      <div class="step-line" id="line-3"></div>
+      <div class="step-item">
+        <div class="step-dot" id="dot-4">4</div>
+        <span class="step-label" id="label-4">이메일 인증</span>
+      </div>
     </div>
 
     <div class="signup-card">
@@ -48,9 +53,9 @@
         <div class="step-desc">사용할 닉네임과 이메일 주소를 입력해주세요.</div>
 
         <div class="field">
-          <label>사용자 이름 <span class="field-hint">공개 표시됨</span></label>
+          <label>사용자 이름 <span class="field-hint">영문·숫자만 허용</span></label>
           <input class="input-field" id="username" type="text"
-                 placeholder="예: null -> next" autocomplete="off">
+                 placeholder="영문, 숫자만 (예: gamer123)" autocomplete="off">
           <div class="field-msg" id="msg-username"></div>
         </div>
 
@@ -132,10 +137,41 @@
 
         <div class="btn-row">
           <button class="btn btn-back" onclick="goStep(2)">← 이전</button>
-          <button class="btn btn-primary btn-full" onclick="submitSignup()">계정 만들기</button>
+          <button class="btn btn-primary btn-full" id="btn-send-code" onclick="sendVerifyCode()">인증 코드 받기 →</button>
         </div>
       </div>
 
+
+      <!-- step 4: 이메일 인증 -->
+      <div class="step-panel" id="step-4">
+        <div class="step-title">이메일 인증</div>
+        <div class="step-desc" id="verify-desc">이메일로 발송된 6자리 인증 코드를 입력해주세요.</div>
+
+        <div class="field">
+          <label>인증 코드</label>
+          <input class="input-field" id="verify-code" type="text"
+                 maxlength="6" placeholder="6자리 숫자 입력"
+                 oninput="this.value=this.value.replace(/[^0-9]/g,'')"
+                 onkeydown="if(event.key==='Enter') submitVerifyCode()"
+                 style="letter-spacing:8px;font-size:22px;font-weight:700;text-align:center">
+          <div class="field-msg" id="msg-verify"></div>
+        </div>
+
+        <div style="text-align:center;margin-top:4px">
+          <button onclick="resendCode()"
+                  style="background:none;border:none;color:var(--muted);font-size:12px;
+                         cursor:pointer;text-decoration:underline;font-family:inherit"
+                  id="btn-resend">
+            코드를 못 받으셨나요? 재발송
+          </button>
+          <div id="resend-timer" style="font-size:11px;color:var(--muted);margin-top:4px;display:none"></div>
+        </div>
+
+        <div class="btn-row" style="margin-top:24px">
+          <button class="btn btn-back" onclick="goStep(3)">← 이전</button>
+          <button class="btn btn-primary btn-full" id="btn-verify" onclick="submitVerifyCode()">인증 완료</button>
+        </div>
+      </div>
 
       <div class="step-panel" id="step-done">
         <div class="done-wrap">
@@ -175,7 +211,7 @@
   }
 
 
-  const TOTAL_STEPS = 3;
+  const TOTAL_STEPS = 4;
   let currentStep = 1;
 
 
@@ -228,13 +264,20 @@
   }
 
   function validateStep1() {
-    const username = document.getElementById('username').value.trim();
-    const email    = document.getElementById('email').value.trim();
-    const emailReg = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const username    = document.getElementById('username').value.trim();
+    const email       = document.getElementById('email').value.trim();
+    const emailReg    = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const usernameReg = /^[a-zA-Z0-9]+$/;   // 영문 + 숫자만
     let ok = true;
-    
-    if (!username || username.length < 3) {
-      setMsg('msg-username', username ? '3자 이상 입력해주세요.' : '사용자 이름을 입력해주세요.', 'error');
+
+    if (!username) {
+      setMsg('msg-username', '사용자 이름을 입력해주세요.', 'error');
+      setFieldState('username', 'invalid'); ok = false;
+    } else if (username.length < 3) {
+      setMsg('msg-username', '3자 이상 입력해주세요.', 'error');
+      setFieldState('username', 'invalid'); ok = false;
+    } else if (!usernameReg.test(username)) {
+      setMsg('msg-username', '영문과 숫자만 사용할 수 있습니다. (한국어·특수문자 불가)', 'error');
       setFieldState('username', 'invalid'); ok = false;
     } else {
       setMsg('msg-username', '✓ 사용 가능한 이름입니다.', 'success');
@@ -262,6 +305,9 @@
     if (pw.length < 8) {
       setMsg('msg-password', '8자 이상 입력해주세요.', 'error');
       setFieldState('password', 'invalid'); ok = false;
+    } else if (!/[^A-Za-z0-9]/.test(pw)) {
+      setMsg('msg-password', '특수문자를 1개 이상 포함해주세요.', 'error');
+      setFieldState('password', 'invalid'); ok = false;
     }
     if (!pw2) {
       setMsg('msg-password2', '비밀번호를 한 번 더 입력해주세요.', 'error');
@@ -282,43 +328,114 @@
   }
 
 
-  async function submitSignup() {
+  // ── step 3 → 코드 발송 ──
+  async function sendVerifyCode() {
     if (!validateStep3()) return;
 
-    const username  = document.getElementById('username').value.trim();
-    const email     = document.getElementById('email').value.trim();
-    const password  = document.getElementById('password').value;
-    const marketing = document.getElementById('chk-marketing').checked;
-
-
-    const btn = document.querySelector('#step-3 .btn-primary');
-    btn.textContent = '처리 중...';
-    btn.disabled = true;
+    const btn   = document.getElementById('btn-send-code');
+    const email = document.getElementById('email').value.trim();
+    btn.textContent = '발송 중...'; btn.disabled = true;
 
     try {
-      const res = await fetch('/api/auth/register/', {
+      const res  = await fetch('/api/auth/send-code/', {
         method : 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken' : getCookie('csrftoken'),
-        },
-        body: JSON.stringify({ username, email, password, marketing }),
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+        body   : JSON.stringify({ email }),
       });
+      const data = await res.json();
 
+      if (data.success) {
+        document.getElementById('verify-desc').textContent =
+          `${email} 로 인증 코드를 발송했습니다.`;
+        goStep(4);
+        startResendTimer(60);
+      } else {
+        setMsg('msg-terms', data.message, 'error');
+      }
+    } catch(e) {
+      setMsg('msg-terms', '네트워크 오류가 발생했습니다.', 'error');
+    } finally {
+      btn.textContent = '인증 코드 받기 →'; btn.disabled = false;
+    }
+  }
+
+  // ── step 4 → 코드 확인 + 회원가입 완료 ──
+  async function submitVerifyCode() {
+    const code = document.getElementById('verify-code').value.trim();
+    if (code.length !== 6) {
+      setMsg('msg-verify', '6자리 숫자를 입력해주세요.', 'error'); return;
+    }
+
+    const btn = document.getElementById('btn-verify');
+    btn.textContent = '확인 중...'; btn.disabled = true;
+
+    try {
+      const res  = await fetch('/api/auth/verify-code/', {
+        method : 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+        body   : JSON.stringify({
+          code     : code,
+          username : document.getElementById('username').value.trim(),
+          password : document.getElementById('password').value,
+          marketing: document.getElementById('chk-marketing').checked,
+        }),
+      });
       const data = await res.json();
 
       if (data.success) {
         showDone();
       } else {
-        setMsg('msg-terms', data.message, 'error');
-        btn.textContent = '계정 만들기';
-        btn.disabled = false;
+        setMsg('msg-verify', data.message, 'error');
       }
+    } catch(e) {
+      setMsg('msg-verify', '네트워크 오류가 발생했습니다.', 'error');
+    } finally {
+      btn.textContent = '인증 완료'; btn.disabled = false;
+    }
+  }
 
-    } catch (err) {
-      setMsg('msg-terms', '네트워크 오류가 발생했습니다.', 'error');
-      btn.textContent = '계정 만들기';
-      btn.disabled = false;
+  // ── 재발송 ──
+  let resendTimerInterval = null;
+  function startResendTimer(seconds) {
+    const timerEl  = document.getElementById('resend-timer');
+    const resendBtn = document.getElementById('btn-resend');
+    resendBtn.style.display = 'none';
+    timerEl.style.display   = 'block';
+    let remain = seconds;
+    clearInterval(resendTimerInterval);
+    resendTimerInterval = setInterval(() => {
+      timerEl.textContent = `${remain}초 후 재발송 가능`;
+      remain--;
+      if (remain < 0) {
+        clearInterval(resendTimerInterval);
+        timerEl.style.display   = 'none';
+        resendBtn.style.display = 'inline';
+      }
+    }, 1000);
+  }
+
+  async function resendCode() {
+    const email = document.getElementById('email').value.trim();
+    const btn   = document.getElementById('btn-resend');
+    btn.textContent = '발송 중...'; btn.disabled = true;
+    try {
+      const res  = await fetch('/api/auth/send-code/', {
+        method : 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+        body   : JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMsg('msg-verify', '✓ 새 코드를 발송했습니다.', 'success');
+        document.getElementById('verify-code').value = '';
+        startResendTimer(60);
+      } else {
+        setMsg('msg-verify', data.message, 'error');
+      }
+    } catch(e) {
+      setMsg('msg-verify', '네트워크 오류가 발생했습니다.', 'error');
+    } finally {
+      btn.textContent = '코드를 못 받으셨나요? 재발송'; btn.disabled = false;
     }
   }
 
@@ -344,15 +461,29 @@
     bars.forEach(b => b.className = 'pw-bar');
     if (!pw) { level.textContent = ''; return; }
 
+    const hasLen     = pw.length >= 8;
+    const hasUpper   = /[A-Z]/.test(pw);
+    const hasNum     = /[0-9]/.test(pw);
+    const hasSpecial = /[^A-Za-z0-9]/.test(pw);
+
+    // 특수문자 없으면 무조건 약함
+    if (!hasSpecial) {
+      bars[0].classList.add('weak');
+      level.textContent = '약함'; level.style.color = '#ef4444';
+      setMsg('msg-password', '특수문자를 1개 이상 포함해주세요. (필수)', 'error');
+      setFieldState('password', 'invalid');
+      return;
+    }
+
     let score = 0;
-    if (pw.length >= 8)                        score++;
-    if (/[A-Z]/.test(pw) && /[0-9]/.test(pw)) score++;
-    if (/[^A-Za-z0-9]/.test(pw))              score++;
+    if (hasLen)             score++;
+    if (hasUpper && hasNum) score++;
+    if (hasSpecial)         score++;
 
     const map = {
-      1: { cls:'weak',   label:'약함', color:'#ef4444', msg:'더 강한 비밀번호를 사용해보세요.', state:'invalid' },
-      2: { cls:'medium', label:'보통', color:'#f59e0b', msg:'조금 더 복잡하게 만들 수 있어요.',  state:'' },
-      3: { cls:'strong', label:'강함', color:'#10b981', msg:'✓ 안전한 비밀번호입니다.',          state:'valid' },
+      1: { cls:'weak',   label:'약함', color:'#ef4444', msg:'8자 이상 입력해주세요.',                state:'invalid' },
+      2: { cls:'medium', label:'보통', color:'#f59e0b', msg:'대문자와 숫자를 추가하면 더 안전해요.', state:'' },
+      3: { cls:'strong', label:'강함', color:'#10b981', msg:'✓ 안전한 비밀번호입니다.',              state:'valid'   },
     };
     const m = map[score] || map[1];
     for (let i = 0; i < score; i++) bars[i].classList.add(m.cls);
