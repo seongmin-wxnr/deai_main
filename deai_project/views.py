@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.contrib.auth.hashers import make_password, check_password
 from django.db.models import Q
 from django.utils import timezone
@@ -13,7 +13,9 @@ from .models import (
     PostParticipant, Friendship, ChatMessage, Notification,
     JoinRequest, DirectMessage, UserReport
 )
-    
+def riotAuth(request):
+    return HttpResponse("c863ea78-32df-4a34-8d88-a8b24b310446", content_type="text/plain")
+
 def createAuthor(request):
     return render(request, "create_.html")
 
@@ -556,7 +558,7 @@ def api_post_leave(request, post_id):
 
         # 탈퇴 처리
         participant.delete()
-        post.current_member = max(1, post.current_member - 1)  # 최소 1명 (작성자)
+        post.current_member = max(1, post.current_member - 1)  # 최소 1명 
         post.is_open = True  # 자리 생겼으니 다시 모집 중
         post.save()
 
@@ -863,21 +865,15 @@ def api_post_join(request, post_id):
             if existing.status == 'pending':
                 return JsonResponse({'success': False, 'message': '이미 가입 신청 중입니다.'}, status=400)
             else:
-                # rejected 또는 accepted 후 탈퇴 → 재신청: 기존 요청 재활용
                 existing.status = 'pending'
                 existing.save()
                 join_req = existing
-
-                # 버그2 수정: 이전 알림 중 pending 상태인 것만 남기고
-                # 기존 join_request 알림을 삭제하고 새로 생성
                 Notification.objects.filter(
                     related_join_request=join_req,
                     type='join_request'
                 ).delete()
         else:
             join_req = JoinRequest.objects.create(post=post, user=user, status='pending')
-
-        # 게시글 주인에게 알림 생성
         Notification.objects.create(
             user    = post.user,
             type    = 'join_request',
@@ -1123,57 +1119,37 @@ def api_admin_analytics(request):
         return JsonResponse({'success': False}, status=403)
 
     from django.db.models import Count
-
-    # ── 유저 통계 ──
     total_users   = BaseUserInformation_data.objects.count()
     active_users  = BaseUserInformation_data.objects.filter(is_active=True).count()
     blocked_users = BaseUserInformation_data.objects.filter(
         blocked_until__gt=timezone.now()
     ).count()
-
-    # ── 게시글 통계 ──
     total_posts  = Post_Community.objects.count()
     open_posts   = Post_Community.objects.filter(is_open=True).count()
     closed_posts = total_posts - open_posts
-
-    # ── 메시지 통계 ──
     party_messages = ChatMessage.objects.count()
     dm_messages    = DirectMessage.objects.count()
     total_messages = party_messages + dm_messages
-
-    # ── 신고 통계 ──
     total_reports   = UserReport.objects.count()
     pending_reports = UserReport.objects.filter(status='pending').count()
-
-    # ── 게임별 유저 분포 ──
     game_dist_qs = UserPreferGame.objects.values('game_id').annotate(cnt=Count('id')).order_by('-cnt')
     game_dist = {row['game_id']: row['cnt'] for row in game_dist_qs}
-
-    # ── 게임별 게시글 수 ──
     post_by_game_qs = Post_Community.objects.values('game_id').annotate(cnt=Count('id')).order_by('-cnt')
     post_by_game = {row['game_id']: row['cnt'] for row in post_by_game_qs}
-
-    # ── 신고 카테고리 분포 ──
     rep_cat_qs = UserReport.objects.values('category').annotate(cnt=Count('id')).order_by('-cnt')
     report_category = {row['category']: row['cnt'] for row in rep_cat_qs}
-
-    # ── TOP 5 게시글 작성자 ──
     top_posters = list(
         Post_Community.objects.values('user__username')
         .annotate(count=Count('id'))
         .order_by('-count')[:5]
     )
     top_posters = [{'username': r['user__username'], 'count': r['count']} for r in top_posters]
-
-    # ── TOP 5 채팅 활성 유저 ──
     top_chatters = list(
         ChatMessage.objects.values('user__username')
         .annotate(count=Count('id'))
         .order_by('-count')[:5]
     )
     top_chatters = [{'username': r['user__username'], 'count': r['count']} for r in top_chatters]
-
-    # ── 최근 활동 타임라인 (최신 10개) ──
     recent_activity = []
 
     recent_posts = Post_Community.objects.select_related('user').order_by('-post_upload_at')[:4]
@@ -1280,7 +1256,6 @@ def api_send_verify_code(request):
 
 
 def api_verify_code(request):
-    """인증 코드 확인 후 회원가입 완료"""
     if request.method != 'POST':
         return JsonResponse({'success': False}, status=405)
     try:
@@ -1292,8 +1267,6 @@ def api_verify_code(request):
 
         if not saved_code or not saved_email:
             return JsonResponse({'success': False, 'message': '인증 코드를 먼저 요청해주세요.'})
-
-        # 5분 만료 체크
         verified_at = datetime.fromisoformat(saved_at)
         if timezone.is_naive(verified_at):
             from django.utils.timezone import make_aware
@@ -1344,13 +1317,12 @@ def api_game_stats(request):
         .values('game_id')
         .annotate(count=Count('id'))
     )
-    # game_id가 문자열(lol, val...) 또는 숫자(1~5) 둘 다 대응
     # selectGame.html의 id는 1~5 숫자형
     ID_MAP = {'lol':1, 'val':2, 'ow':3, 'fifa':4, 'genshin':5}
     result = []
     for s in stats:
         gid = s['game_id']
-        numeric_id = ID_MAP.get(gid, gid)  # 이미 숫자면 그대로
+        numeric_id = ID_MAP.get(gid, gid) 
         try:
             numeric_id = int(numeric_id)
         except (ValueError, TypeError):
