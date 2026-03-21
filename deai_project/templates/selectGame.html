@@ -34,7 +34,7 @@
       <section class="ranking-section">
         <div class="section-header">
           <h2 class="section-title">지금 핫한 게임 🔥</h2>
-          <span class="section-sub">실시간 매칭 현황</span>
+          <span class="section-sub">총 유저</span>
         </div>
         <div class="ranking-list" id="ranking-list"></div>
       </section>
@@ -61,11 +61,8 @@
 
   <div class="info-modal-overlay" id="info-modal-overlay">
     <div class="info-modal" id="info-modal">
-
-      <!-- 게임 헤더 -->
       <div class="modal-game-header" id="modal-game-header"></div>
 
-      <!-- 공통: 닉네임 / 태그 -->
       <div class="modal-section-label">플레이어 정보</div>
       <div class="modal-field">
         <label class="modal-label">이름 / 태그</label>
@@ -78,11 +75,7 @@
         </div>
         <div class="modal-error" id="error-name"></div>
       </div>
-
-      <!-- 게임별 동적 필드 -->
       <div id="modal-dynamic"></div>
-
-      <!-- 버튼 -->
       <div class="modal-btns">
         <button class="btn-modal-cancel"  onclick="cancelModal()">취소</button>
         <button class="btn-modal-confirm" onclick="confirmModal()">선택 완료</button>
@@ -141,7 +134,7 @@
             {v:'아이언',t:'🩶 아이언'},{v:'브론즈',t:'🥉 브론즈'},
             {v:'실버',t:'🥈 실버'},{v:'골드',t:'🥇 골드'},
             {v:'플래티넘',t:'🩵 플래티넘'},{v:'다이아몬드',t:'💎 다이아몬드'},
-            {v:'어센던트',t:'🔷 어센던트'},{v:'이모탈',t:'🔴 이모탈'},{v:'레디언트',t:'👑 레디언트'},
+            {v:'초월자',t:'🔷 초월자'},{v:'불멸',t:'🔴 불멸'},{v:'레디언트',t:'👑 레디언트'},
           ]},
           { id:'val_div', label:'단계', type:'select', options:[
             {v:'1',t:'1단계'},{v:'2',t:'2단계'},{v:'3',t:'3단계'},
@@ -154,8 +147,8 @@
         { label:'에이전트 포지션', fields:[
           { id:'val_role', label:'포지션', type:'select', required:true, options:[
             {v:'',t:'포지션 선택'},
-            {v:'듀얼리스트',t:'⚔️ 듀얼리스트'},{v:'이니시에이터',t:'🎯 이니시에이터'},
-            {v:'센티넬',t:'🛡️ 센티넬'},{v:'컨트롤러',t:'🌀 컨트롤러'},
+            {v:'타격대',t:'⚔️ 타격대'},{v:'척후대',t:'🎯 척후대'},
+            {v:'감시자',t:'🛡️ 감시자'},{v:'전략가',t:'🌀 전략가'},
           ]},
         ]},
       ],
@@ -283,7 +276,7 @@
              onclick="openModal(${g.id})">
           <span class="card-icon">${g.icon}</span>
           <div class="card-name">${g.name}</div>
-          <div class="card-players">${g.players.toLocaleString()}명 접속 중</div>
+          <div class="card-players">${g.players.toLocaleString()}명 사용 중</div>
           ${prev}
         </div>`;
     }).join('');
@@ -375,7 +368,6 @@
 
     if (!ok) return;
 
-    // ── 1개만 선택: 기존 선택 교체 ──
     selectedGame = data;
     closeModal();
     renderRanking();
@@ -514,8 +506,24 @@
     setTimeout(() => { window.location.href = url; }, 400);
   }
 
-  renderRanking();
-  renderGrid();
+  async function loadGameStats() {
+    try {
+      const res  = await fetch('/api/game/stats/');
+      const data = await res.json();
+      if (data.success) {
+        data.stats.forEach(s => {
+          const g = GAMES.find(g => g.id === s.game_id);
+          if (g) g.players = s.count;
+        });
+      }
+    } catch(e) {
+      console.error('게임 통계 로드 실패', e);
+    }
+    renderRanking();
+    renderGrid();
+  }
+
+  loadGameStats();
   </script>
 </body>
 </html>
