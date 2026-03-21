@@ -147,3 +147,29 @@ class RiotDataCacheAdmin(admin.ModelAdmin):
             djcache.delete(key)
         count = queryset.delete()[0]
         self.message_user(request, f'{count}개 캐시를 삭제했습니다. (키: {", ".join(keys)})')
+
+####
+from .models import RankingSnapshot, RankingEntry
+
+@admin.register(RankingSnapshot)
+class RankingSnapshotAdmin(admin.ModelAdmin):
+    list_display  = ('id', 'game', 'queue', 'collected_at', 'is_active', 'entry_count')
+    list_filter   = ('game', 'queue', 'is_active')
+    ordering      = ('-collected_at',)
+    actions       = ['deactivate_selected']
+
+    @admin.display(description='유저 수')
+    def entry_count(self, obj):
+        return obj.entries.count()
+
+    @admin.action(description='선택 스냅샷 비활성화')
+    def deactivate_selected(self, request, queryset):
+        count = queryset.update(is_active=False)
+        self.message_user(request, f'{count}개 스냅샷을 비활성화했습니다.')
+
+@admin.register(RankingEntry)
+class RankingEntryAdmin(admin.ModelAdmin):
+    list_display  = ('rank', 'name', 'tag_line', 'tier', 'lp', 'snapshot')
+    list_filter   = ('tier', 'snapshot__game', 'snapshot__queue')
+    search_fields = ('name', 'puuid')
+    ordering      = ('snapshot', 'rank')
