@@ -14,7 +14,6 @@ CACHE_TTL    = 60 * 60 * 6   # 6시간 Django 캐시
 DB_TTL_HOURS = 6              # DB 캐시 만료 시간
 
 def _db_get(key: str):
-    """DB 캐시 조회"""
     try:
         from .models import RiotDataCache
         return RiotDataCache.get(key)
@@ -22,7 +21,6 @@ def _db_get(key: str):
         return None
 
 def _db_set(key: str, data, version: str = '', ttl_hours: int = DB_TTL_HOURS):
-    """DB 캐시 저장"""
     try:
         from .models import RiotDataCache
         RiotDataCache.set(key, data, version=version, ttl_hours=ttl_hours)
@@ -30,7 +28,6 @@ def _db_set(key: str, data, version: str = '', ttl_hours: int = DB_TTL_HOURS):
         pass
 
 def _db_delete(key: str):
-    """DB 캐시 삭제"""
     try:
         from .models import RiotDataCache
         RiotDataCache.delete_key(key)
@@ -38,12 +35,15 @@ def _db_delete(key: str):
         pass
 
 def _cached_get(key: str):
+    # ① 메모리 (프로세스 내)
     if key in _MEM_CACHE:
         return _MEM_CACHE[key]
+    # ② Django cache (Redis/Memcached)
     data = cache.get(key)
     if data is not None:
         _MEM_CACHE[key] = data
         return data
+    # ③ DB
     data = _db_get(key)
     if data is not None:
         _MEM_CACHE[key] = data
@@ -57,7 +57,6 @@ def _cached_set(key: str, data, version: str = ''):
     _db_set(key, data, version=version)
 
 def _cached_delete(key: str):
-    """세 계층 모두 삭제"""
     _MEM_CACHE.pop(key, None)
     cache.delete(key)
     _db_delete(key)
@@ -82,7 +81,6 @@ _CDRAGON_HEADERS = {
 }
 
 def _get_cdragon(url: str, cache_key: str = '') -> dict:
-    """CDragon JSON GET — 3단계 캐시 → 외부 API 3회 재시도"""
     if cache_key:
         cached = _cached_get(cache_key)
         if cached is not None:
@@ -248,6 +246,8 @@ def info_cache_clear(request):
                 keys_to_delete.append(f'info_lol_items_{lang}_{h}')
         keys_to_delete.append('ddragon_version')
         keys_to_delete.append('cdragon_tft_ko_kr')   # CDragon 캐시
+        for lang in ['ko_KR', 'en_US']:
+            keys_to_delete.append(f'info_tft_augments_{lang}')
         for key in keys_to_delete:
             _cached_delete(key)
             cleared.append(key)
@@ -336,7 +336,6 @@ def info_lol_items(request):
                     else:
                         stat_parts.append(f'+{int(val)} {stat_name}')
             desc = item.get('plaintext', '') or item.get('description', '')
-            # HTML 태그 간단 제거
             import re
             desc = re.sub(r'<[^>]+>', '', desc)[:120]
             full_desc = item.get('description', '')
@@ -375,13 +374,10 @@ def info_lol_items(request):
                 'into_ids': into_ids,
             })
 
-        ## 내림차순 정렬
         type_order = {'legendary':0, 'arena_legendary':1, 'arena':2, 'aram':3, 'entry':4}
         items.sort(key=lambda x: (type_order.get(x['type'], 9), -x['gold']))
         result = {'success': True, 'version': ver, 'items': items}
         _cached_set(cache_key, result, version=ver)
-
-        #print(f"[ITEM NAME DEBUG] -> {items}")
         return JsonResponse(result)
 
     except Exception as e:
@@ -396,15 +392,14 @@ def info_tft_champions(request):
         return JsonResponse(cached)
 
     try:
-        # CDragon/ddragon 모두 7코스트를 cost=5로 잘못
         COST7_API_NAMES = {
             'TFT16_Galio',       
             'TFT16_BaronNashor',  
-            'TFT16_Ryze',    
-            'TFT16_Lucian',       
-            'TFT16_Volibear',
-            'TFT16_Brock', 
-            'TFT16_Sylas', 
+            'TFT16_Ryze',       
+            'TFT16_Lucian',    
+            'TFT16_Volibear',    
+            'TFT16_Brock',       
+            'TFT16_Sylas',       
         }
 
         def tc_img(path):
@@ -431,7 +426,6 @@ def info_tft_champions(request):
             raw_cost = c.get('cost', 0)
             if raw_cost < 1 or raw_cost > 5:
                 continue
-            # 7코스트 수동 보정
             cost = 7 if api_name in COST7_API_NAMES else raw_cost
             img = tc_img(c.get('squareIcon') or c.get('tileIcon', ''))
             champs.append({
@@ -475,6 +469,8 @@ def info_tft_items(request):
         }
         EMBLEM_BASES = {'TFT_Item_FryingPan', 'TFT_Item_Spatula'}
         EMBLEM_COMP  = BASIC_COMPONENTS | EMBLEM_BASES
+
+        # apiName {name, icon} 
         item_map = {
             i['apiName']: {'name': i.get('name',''), 'icon': i.get('icon','')}
             for i in all_items if i.get('apiName')
@@ -511,7 +507,6 @@ def info_tft_items(request):
             s = re.sub(r'@[^@]+@', '?', s)
             s = re.sub(r'\n{3,}', '\n\n', s).strip()
             return s[:300]
-        
         STAT_MAP = {
             'AD'              : ('공격력',       'pct_conv'),
             'AP'              : ('주문력',       'int'),
@@ -534,7 +529,7 @@ def info_tft_items(request):
             if not effects:
                 return []
             parts = []
-            seen_labels = set()   # 중복 레이블 방지 (StatOmnivamp vs Omnivamp 등)
+            seen_labels = set() 
             for k, v in effects.items():
                 if k not in STAT_MAP or v is None:
                     continue
@@ -562,8 +557,6 @@ def info_tft_items(request):
                 except (ValueError, TypeError):
                     pass
             return parts
-
-        # 특성 이름 → 아이콘 맵 (상징 부여 특성 표시용)
         trait_icon_map = {}
         for t in cd_data.get('sets', {}).get('16', {}).get('traits', []):
             if t.get('name') and t.get('icon'):
@@ -576,7 +569,6 @@ def info_tft_items(request):
             icon    = item.get('icon', '')
             comp    = item.get('composition') or []
             effects = item.get('effects') or {}
-            # 화이트리스트가 로드됐으면 반드시 포함된 것만 처리
             if set16_item_ids and api not in set16_item_ids:
                 continue
 
@@ -584,21 +576,18 @@ def info_tft_items(request):
                 continue
             if not icon or not (icon.startswith('ASSETS') or icon.startswith('assets')):
                 continue
-            # 실제 아이템 아이콘인지 확인 (Items/ 또는 Traits/Spatula 경로)
             if 'Items/' not in icon and 'Traits/' not in icon:
                 continue
 
-            # 타입 분류
             if api in BASIC_COMPONENTS:
                 itype = 'component'
             elif api in EMBLEM_BASES:
-                itype = 'component'  # 프라이팬/뒤집개도 부품으로 표시
+                itype = 'component' 
             elif '찬란한' in name and 'Radiant' in api:
                 itype = 'radiant'
             elif (
                 len(comp) >= 2
                 and all(c in BASIC_COMPONENTS for c in comp)
-                # Spatula/FryingPan 포함 아이템은 상징이므로 combined에서 제외
                 and not any(b in comp for b in EMBLEM_BASES)
             ):
                 itype = 'combined'
@@ -617,8 +606,6 @@ def info_tft_items(request):
                 itype = 'artifact'
             else:
                 continue
-
-            # 조합법 상세 (부품 이름 + 이미지)
             comp_detail = []
             for c in comp:
                 cm = item_map.get(c, {})
@@ -630,7 +617,6 @@ def info_tft_items(request):
 
             stat_parts = effects_to_stats(effects)
 
-            # 상징: 부여 특성 이름·아이콘
             trait_name = ''
             trait_icon = ''
             if itype == 'emblem':
@@ -652,8 +638,6 @@ def info_tft_items(request):
         type_order = {'component': 0, 'combined': 1, 'radiant': 2, 'emblem': 3, 'artifact': 4}
         items.sort(key=lambda x: (type_order.get(x['type'], 9), x['name']))
 
-        # 중복 제거: 같은 타입+이름 조합은 첫 번째만 유지
-        # (TFT_Item_InfinityEdge vs TFT_Item_CorruptedInfinityEdge 등)
         seen = set()
         unique_items = []
         for item in items:
@@ -669,4 +653,120 @@ def info_tft_items(request):
 
     except Exception as e:
         print(f'[INFO TFT ITEMS] {e}')
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+def info_tft_augments(request):
+    lang      = request.GET.get('lang', 'ko_KR')
+    cache_key = f'info_tft_augments_{lang}'
+    cached    = _cached_get(cache_key)
+    if cached and cached.get('total', 0) > 0:
+        return JsonResponse(cached)
+
+    try:
+        cd_data   = _get_cdragon(
+            'https://raw.communitydragon.org/latest/cdragon/tft/ko_kr.json',
+            'cdragon_tft_ko_kr'
+        )
+        all_items = cd_data.get('items', [])
+        print(f'[INFO TFT AUGMENTS] 전체 items 수: {len(all_items)}', flush=True)
+
+        import re
+
+        def tc_img(path):
+            if not path:
+                return ''
+            p = path.lower().lstrip('/')
+            if p.startswith('game/'):
+                p = p[5:]
+            for ext in ('.tex', '.dds'):
+                if p.endswith(ext):
+                    p = p[:-len(ext)] + '.png'
+                    break
+            return f'https://raw.communitydragon.org/latest/game/{p}'
+
+        def clean_desc(text):
+            if not text:
+                return ''
+            s = re.sub(r'<tftitemrules>(.*?)</tftitemrules>', r'\1', text, flags=re.DOTALL)
+            s = re.sub(r'<TFTBonus>(.*?)</TFTBonus>',        r'\1', s,    flags=re.DOTALL)
+            s = re.sub(r'<br\s*/?>', '\n', s, flags=re.IGNORECASE)
+            s = re.sub(r'<[^>]+>', '', s)
+            s = re.sub(r'@TFTUnitProperty[^@]*@', '', s)
+            s = re.sub(r'%i:[^%\s]+%', '', s)
+            s = re.sub(r'\(%i:[^)]+\)', '', s)
+            s = re.sub(r'@[^@]+@', '?', s)
+            s = re.sub(r'\n{3,}', '\n\n', s).strip()
+            return s[:400]
+
+        _SUFFIX_RE = re.compile(r'(\d)$')
+
+        def infer_tier(item) -> int:
+            raw = item.get('tier')
+            if isinstance(raw, (int, float)) and int(raw) in (1, 2, 3):
+                return int(raw)
+            if isinstance(raw, str) and raw.isdigit() and int(raw) in (1, 2, 3):
+                return int(raw)
+
+            api = item.get('apiName', '')
+            m = _SUFFIX_RE.search(api)
+            if m:
+                n = int(m.group(1))
+                if n in (1, 2, 3):
+                    return n
+            return 1
+
+        TIER_LABEL = {1: 'silver', 2: 'gold', 3: 'prismatic'}
+        TIER_KO    = {1: '실버',   2: '골드',  3: '프리즘'}
+
+        tier_dist = {1: 0, 2: 0, 3: 0}
+
+        augments = []
+        for item in all_items:
+            api  = item.get('apiName', '')
+            name = item.get('name', '')
+            if not api.startswith('TFT16_') or 'Augment' not in api:
+                continue
+            if not name or '@' in name or len(name) < 2:
+                continue
+
+            icon = item.get('icon', '')
+            if not icon:
+                continue
+
+            tier_num = infer_tier(item)
+            tier_dist[tier_num] = tier_dist.get(tier_num, 0) + 1
+
+            augments.append({
+                'id'     : api,
+                'name'   : name,
+                'tier'   : TIER_LABEL[tier_num],
+                'tierKo' : TIER_KO[tier_num],
+                'tierNum': tier_num,
+                'desc'   : clean_desc(item.get('desc', '')),
+                'img'    : tc_img(icon),
+            })
+
+        print(
+            f'[INFO TFT AUGMENTS] 추출: {len(augments)}개 '
+            f'| 실버: {tier_dist[1]} 골드: {tier_dist[2]} 프리즘: {tier_dist[3]}',
+            flush=True
+        )
+        augments.sort(key=lambda x: (x['tierNum'], x['name']))
+        seen, unique = set(), []
+        for a in augments:
+            if a['name'] not in seen:
+                seen.add(a['name'])
+                unique.append(a)
+
+        print(f'[INFO TFT AUGMENTS] 중복 제거 후: {len(unique)}개', flush=True)
+
+        result = {'success': True, 'augments': unique, 'total': len(unique)}
+        if unique:
+            _cached_set(cache_key, result)
+        else:
+            print('[INFO TFT AUGMENTS] 결과 0개 — 캐싱 생략', flush=True)
+        return JsonResponse(result)
+
+    except Exception as e:
+        print(f'[INFO TFT AUGMENTS] 실패: {type(e).__name__}: {e}', flush=True)
         return JsonResponse({'success': False, 'message': str(e)}, status=500)
