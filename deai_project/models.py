@@ -284,3 +284,81 @@ class RiotDataCache(models.Model):
         cls.objects.filter(cache_key=key).delete()
 
 ## + rank 
+class RankingSnapshot(models.Model):
+    GAME_CHOICES = [
+        ('lol', 'League of Legends'),
+        ('tft', 'Teamfight Tactics'),
+    ]
+    QUEUE_CHOICES = [
+        ('RANKED_SOLO_5x5',        'LoL 솔로랭크'),
+        ('RANKED_FLEX_SR',         'LoL 자유랭크'),
+        ('RANKED_TFT',             'TFT 솔로'),
+        ('RANKED_TFT_DOUBLE_UP',   'TFT 더블업'),
+    ]
+
+    game       = models.CharField(max_length=5,  choices=GAME_CHOICES)
+    queue      = models.CharField(max_length=30, choices=QUEUE_CHOICES)
+    collected_at = models.DateTimeField(default=timezone.now, verbose_name='수집 시각')
+    is_active  = models.BooleanField(default=True, verbose_name='활성 스냅샷')
+
+    class Meta:
+        db_table = 'c_ranking_snapshot'
+        indexes  = [models.Index(fields=['game', 'queue', 'is_active'])]
+
+    def __str__(self):
+        return f'[{self.game}/{self.queue}] {self.collected_at:%Y-%m-%d %H:%M} active={self.is_active}'
+
+
+class RankingEntry(models.Model):
+    snapshot    = models.ForeignKey(
+        RankingSnapshot, on_delete=models.CASCADE, related_name='entries'
+    )
+
+    rank        = models.PositiveIntegerField(verbose_name='순위')
+    summoner_id = models.CharField(max_length=100, blank=True)
+    puuid       = models.CharField(max_length=100, blank=True, db_index=True)
+    name        = models.CharField(max_length=80,  default='?')
+    tag_line    = models.CharField(max_length=20,  blank=True)
+    icon_id     = models.PositiveIntegerField(default=1)
+    level       = models.PositiveIntegerField(default=1)
+    tier        = models.CharField(max_length=20)
+    division    = models.CharField(max_length=4, blank=True)
+    rank_label  = models.CharField(max_length=30)
+    lp          = models.IntegerField(default=0)
+    wins        = models.IntegerField(default=0)
+    losses      = models.IntegerField(default=0)
+    winrate     = models.IntegerField(default=0)
+    hot_streak  = models.BooleanField(default=False)
+    veteran     = models.BooleanField(default=False)
+    fresh_blood = models.BooleanField(default=False)
+
+    class Meta:
+        db_table = 'c_userTable'
+        ordering = ['rank']
+        indexes  = [
+            models.Index(fields=['snapshot', 'rank']),
+        ]
+
+    def __str__(self):
+        return f'#{self.rank} {self.name}#{self.tag_line} {self.tier} {self.lp}LP'
+
+    def to_dict(self) -> dict:
+        return {
+            'rank'      : self.rank,
+            'summonerId': self.summoner_id,
+            'puuid'     : self.puuid,
+            'name'      : self.name,
+            'tagLine'   : self.tag_line,
+            'iconId'    : self.icon_id,
+            'level'     : self.level,
+            'tier'      : self.tier,
+            'division'  : self.division,
+            'rankLabel' : self.rank_label,
+            'lp'        : self.lp,
+            'wins'      : self.wins,
+            'losses'    : self.losses,
+            'winrate'   : self.winrate,
+            'hotStreak' : self.hot_streak,
+            'veteran'   : self.veteran,
+            'freshBlood': self.fresh_blood,
+        }
