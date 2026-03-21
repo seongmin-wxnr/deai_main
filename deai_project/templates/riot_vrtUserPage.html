@@ -8,6 +8,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
   <style>
+/* ═══════════════════════════════════════════════
+   VALORANT THEME  ·  검정 × 빨강 × 연빨강 × 금색
+   ═══════════════════════════════════════════════ */
 :root {
   --bg:          #080808;
   --bg2:         #0e0e0e;
@@ -69,9 +72,19 @@ body::after {
 .nav-logo-sep  { color:var(--text-muted); font-size:13px; }
 .nav-logo-sub  { font-size:11px; font-weight:700; color:var(--red-light); letter-spacing:2.5px; text-transform:uppercase; }
 .nav-back {
-  display:flex; align-items:center; gap:6px; flex-shrink:0;
-  font-size:12px; font-weight:700; letter-spacing:.5px; text-transform:uppercase;
-  color:var(--text-muted); background:none; border:none; cursor:pointer; transition:color .18s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-sub);
+  text-decoration: none;
+  font-family: var(--font-ui);
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  transition: color 0.2s;
+  cursor: pointer;
+  background: none;
+  border: none;
 }
 .nav-back:hover { color:var(--red-light); }
 .nav-back svg   { width:15px; height:15px; }
@@ -305,7 +318,83 @@ body::after {
 @media (max-width:900px) {
   .userpage-wrap { flex-direction:column; }
   .sidebar { width:100%; }
-  .nav { padding:0 16px; }
+  .page-wrapper { padding-top:64px; padding-bottom:32px; }
+  .userpage-wrap { padding:0 12px; gap:10px; }
+  .nav { padding:0 14px; }
+  .nav-logo-sub { display:none; }
+
+  /* 검색창 축소 */
+  .nav > div[style*="max-width:440px"] {
+    margin:0 8px !important;
+    max-width:none !important;
+    flex:1 !important;
+  }
+
+  /* 매치 카드 */
+  .match-card { padding:9px 12px; gap:8px; }
+  .match-result-col { width:50px; }
+  .match-result-txt { font-size:13px; }
+  .match-champ-icon { width:38px; height:38px; }
+  .match-spell { width:18px; height:18px; }
+  .match-kda { font-size:14px; }
+  .match-kda-ratio { font-size:10px; }
+  .match-items-col { display:none; }
+
+  /* 통계바 */
+  .stats-bar { flex-wrap:wrap; }
+  .stats-bar-item { flex:1 1 50%; border-right:none; border-bottom:1px solid var(--border); }
+  .stats-bar-item:nth-child(odd)  { border-right:1px solid var(--border); }
+  .stats-bar-item:last-child,
+  .stats-bar-item:nth-last-child(2):nth-child(odd) { border-bottom:none; }
+
+  /* 탭 */
+  .tab-btn { padding:10px 10px; font-size:10px; letter-spacing:1px; }
+
+  /* 챔피언 통계 테이블 */
+  .champ-stats-table th { padding:7px 8px; font-size:9px; }
+  .champ-stats-table td { padding:8px 8px; font-size:12px; }
+  .champ-icon-sm { width:26px; height:26px; margin-right:5px; }
+}
+
+@media (max-width:600px) {
+  .page-wrapper { padding-top:56px; padding-bottom:24px; }
+  .userpage-wrap { padding:0 8px; }
+  .nav { padding:0 10px; }
+
+  /* 매치 카드 더 축소 */
+  .match-card { padding:8px 10px; gap:6px; }
+  .match-result-col { width:44px; }
+  .match-result-txt { font-size:12px; }
+  .match-queue, .match-duration { font-size:9px; }
+  .match-champ-icon { width:34px; height:34px; }
+  .match-spell { width:16px; height:16px; }
+  .match-kda { font-size:13px; }
+  .match-spells { gap:2px; }
+
+  /* 모달 */
+  #match-modal { font-size:11px; }
+
+  /* 탭 */
+  .tab-bar { padding:0 8px; }
+  .tab-btn { padding:9px 8px; font-size:9px; }
+}
+
+/* ─── iOS Safari safe-area ─── */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .page-wrapper {
+    padding-bottom: max(32px, env(safe-area-inset-bottom));
+  }
+  .nav {
+    padding-left:  max(14px, env(safe-area-inset-left));
+    padding-right: max(14px, env(safe-area-inset-right));
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .tab-btn       { min-height: 44px; }
+  .match-card    { cursor: default; }
+  .btn, .btn-outline { min-height: 44px; }
+  .champ-filter-btn  { min-height: 40px; }
 }
   </style>
 </head>
@@ -360,8 +449,6 @@ body::after {
 
 <div class="page-wrapper">
   <div class="userpage-wrap">
-
-    <!-- ═══ 왼쪽 사이드바 ═══ -->
     <aside class="sidebar">
 
       <!-- 프로필 카드 -->
@@ -374,8 +461,6 @@ body::after {
         <div class="tier-card-header">경쟁전 랭크</div>
         <div class="state-box" style="padding:24px;"><div class="spinner"></div></div>
       </div>
-
-      <!-- 자주 쓰는 에이전트 TOP 5 -->
       <div class="card anim-4" id="top-agents-card">
         <div class="tier-card-header">자주 쓰는 에이전트 TOP 5</div>
         <div class="state-box" style="padding:24px;"><div class="spinner"></div></div>
@@ -428,8 +513,6 @@ body::after {
         <div style="text-align:center;padding:16px;display:none;" id="load-more-wrap">
           <button class="btn btn-outline" onclick="loadMoreMatches()" id="load-more-btn">더 보기</button>
         </div>
-
-        <!-- 에이전트 통계 탭 -->
         <div class="tab-content" id="tab-agents" style="padding:16px;">
           <div id="agent-stats-wrap">
             <div class="state-box"><div class="spinner"></div><span class="msg">집계 중...</span></div>
@@ -449,9 +532,10 @@ let S = {
   region   : 'kr',
   gameName : '',
   tagLine  : '',
-  matchData : [], 
-  agentData : {},    
+  matchData : [],   
+  agentData : {},  
 };
+
 function parseParams() {
   const p = new URLSearchParams(location.search);
   S.gameName = p.get('name')   || '';
@@ -507,8 +591,10 @@ async function loadRank() {
   );
   renderRankCard(data);
 }
-
 function valTierIconUrl(tierNum) {
+  // 티어 이미지는 valorant-api.com 에서 제공
+  // /v1/competitivetiers 에서 uuid 조회 필요하나 개발 키로는 접근 어려움
+  // → CommunityDragon VAL 티어 이미지 사용
   const TIER_ICONS = {
     0 : '', 1 : '', 2 : '',
     3 : 'iron',       4 : 'iron',       5 : 'iron',
@@ -622,6 +708,7 @@ async function initMatches() {
     }
   });
 
+  // 더보기 버튼
   S._allMatchIds  = idsData.matchIds;
   S._loadedCount  = PAGE_SIZE;
   if (idsData.matchIds.length > PAGE_SIZE) {
@@ -630,6 +717,8 @@ async function initMatches() {
 
   updateStatsBar();
   renderAgentStats();
+
+  // Top Agents 사이드바 업데이트
   renderTopAgents();
 }
 
@@ -681,9 +770,12 @@ function buildMatchCard(match) {
   const info    = match.matchInfo;
   const players = match.players || [];
   const teams   = match.teams   || [];
+
+  // 내 플레이어
   const me = players.find(p => p.puuid === S.puuid);
   if (!me) return null;
 
+  // 내 팀 승패
   const myTeam = teams.find(t => t.teamId === me.teamId);
   const isWin  = myTeam?.won ?? false;
 
@@ -697,10 +789,13 @@ function buildMatchCard(match) {
   const kdaClass = kda === 'Perfect' ? 'kda-perfect'
                  : parseFloat(kda) >= 4 ? 'kda-great'
                  : parseFloat(kda) >= 2.5 ? 'kda-good' : '';
+
+  // 경기 시간 (밀리초 → 분:초)
   const durSec = Math.round((info.gameLengthMillis || 0) / 1000);
   const durStr = `${Math.floor(durSec / 60)}:${String(durSec % 60).padStart(2, '0')}`;
   const timeAgo = timeSince(Math.round((info.gameStartMillis || 0) / 1000));
 
+  // 라운드 스코어
   const myRoundsWon  = myTeam?.roundsWon ?? 0;
   const myRoundsLost = (myTeam?.roundsPlayed ?? 0) - myRoundsWon;
   const enemyTeam    = teams.find(t => t.teamId !== me.teamId);
@@ -803,6 +898,7 @@ function updateStatsBar() {
 
   document.getElementById('stats-bar-wrap').style.display = 'block';
 }
+
 function accumAgent(match) {
   const me = match.players?.find(p => p.puuid === S.puuid);
   if (!me) return;
@@ -957,6 +1053,7 @@ function openMatchModal(match) {
     new Date(info.gameStartMillis).toLocaleDateString('ko-KR', {month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
   document.getElementById('modal-map').textContent      = info.mapName || '';
 
+  // 팀 분리 (VAL: 'Red' / 'Blue')
   const redTeam  = players.filter(p => p.teamId === 'Red');
   const blueTeam = players.filter(p => p.teamId === 'Blue');
 
@@ -1039,6 +1136,7 @@ function buildPlayerRow(p) {
                color:var(--text-sub);padding:8px 6px;">${p.damage.perRound}</td>
   </tr>`;
 }
+
 async function navSearch() {
   const name   = document.getElementById('nav-name-input').value.trim();
   const tag    = document.getElementById('nav-tag-input').value.trim();
@@ -1111,7 +1209,6 @@ async function init() {
   parseParams();
   if (!S.puuid) { location.href = '/RiotSearch/'; return; }
   renderProfile();
-  // 랭크 + 매치 병렬 로드
   await Promise.allSettled([
     loadRank(),
     initMatches(),
@@ -1127,6 +1224,7 @@ init();
       overflow:hidden; box-shadow:0 32px 80px rgba(0,0,0,0.96);
       border-top:2px solid var(--red);">
 
+    <!-- 헤더 -->
     <div style="padding:14px 20px;border-bottom:1px solid #242424;background:#0e0e0e;
                 display:flex;align-items:center;justify-content:space-between;">
       <div style="display:flex;align-items:center;gap:12px;">
@@ -1143,7 +1241,11 @@ init();
               onmouseover="this.style.color='var(--red)'"
               onmouseout="this.style.color='var(--text-muted)'">✕</button>
     </div>
+
+    <!-- 팀 테이블 -->
     <div style="padding:16px 20px;background:#0a0a0a;">
+
+      <!-- 블루팀 -->
       <div style="margin-bottom:20px;">
         <div id="modal-team1-label"
              style="font-family:var(--font-ui);font-size:10px;font-weight:700;letter-spacing:2px;
@@ -1164,6 +1266,8 @@ init();
       </div>
 
       <div style="border-top:1px solid #252525;margin:8px 0 20px;"></div>
+
+      <!-- 레드팀 -->
       <div>
         <div id="modal-team2-label"
              style="font-family:var(--font-ui);font-size:10px;font-weight:700;letter-spacing:2px;
@@ -1198,5 +1302,4 @@ window.addEventListener('pageshow', (e) => {
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMatchModal(); });
 </script>
 </body>
-
 </html>
