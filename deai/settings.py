@@ -26,17 +26,17 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 
-SECRET_KEY = 
-RIOT_API_KEY = 
-RIOT_DD_VERSION =
+SECRET_KEY = '' ## django key
+RIOT_API_KEY = '' ## your riot api key
+RIOT_DD_VERSION = '16.5.1'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
 # ALLOWED_HOSTS = ['localhost', '127.0.0.1']
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = [''] ## * <- 배포 시 해제 
 # ngrok HTTPS 헤더 신뢰
-CSRF_TRUSTED_ORIGINS = ['https://unmasticatory-shannon-unfrosty.ngrok-free.dev']
+CSRF_TRUSTED_ORIGINS = ['']
 # SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')  # ngrok/배포 시에만 활성화
 # Application definition
 
@@ -93,7 +93,7 @@ ASGI_APPLICATION = 'deai.asgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
+        'ENGINE': 'django.db.backends.sqlite3', ## self
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
@@ -124,9 +124,9 @@ CHANNEL_LAYERS = {
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
 
-LANGUAGE_CODE = 'ko-kr'
+LANGUAGE_CODE = 'ko-kr' ## self
 
-TIME_ZONE = 'Asia/Seoul'
+TIME_ZONE = 'Asia/Seoul' ## self
 
 USE_I18N = True
 
@@ -149,16 +149,15 @@ CSRF_COOKIE_SAMESITE    = 'Lax'
 CSRF_COOKIE_SECURE      = False
 
 CSRF_TRUSTED_ORIGINS = [
-    'https://unmasticatory-shannon-unfrosty.ngrok-free.dev',
-    'http://unmasticatory-shannon-unfrosty.ngrok-free.dev',  # ← http도 추가
+
 ]
 # 이메일 설정 (Gmail SMTP)
-EMAIL_BACKEND       = ''
-EMAIL_HOST          = 'smtp.gmail.com'
-EMAIL_PORT          = 587
+EMAIL_BACKEND       = 
+EMAIL_HOST          = 
+EMAIL_PORT          = 
 EMAIL_USE_TLS       = True
-EMAIL_HOST_USER     = ''
-EMAIL_HOST_PASSWORD = ''     
+EMAIL_HOST_USER     = 
+EMAIL_HOST_PASSWORD =  
 DEFAULT_FROM_EMAIL  = EMAIL_HOST_USER
 
 RIOT_REGION_MAP = {
@@ -166,34 +165,7 @@ RIOT_REGION_MAP = {
 }
 
 VAL_TIER_MAP = {
-    0 : {'name': 'UNRANKED',   'division': ''},
-    1 : {'name': 'UNRANKED',   'division': ''},
-    2 : {'name': 'UNRANKED',   'division': ''},
-    3 : {'name': 'IRON',       'division': '1'},
-    4 : {'name': 'IRON',       'division': '2'},
-    5 : {'name': 'IRON',       'division': '3'},
-    6 : {'name': 'BRONZE',     'division': '1'},
-    7 : {'name': 'BRONZE',     'division': '2'},
-    8 : {'name': 'BRONZE',     'division': '3'},
-    9 : {'name': 'SILVER',     'division': '1'},
-    10: {'name': 'SILVER',     'division': '2'},
-    11: {'name': 'SILVER',     'division': '3'},
-    12: {'name': 'GOLD',       'division': '1'},
-    13: {'name': 'GOLD',       'division': '2'},
-    14: {'name': 'GOLD',       'division': '3'},
-    15: {'name': 'PLATINUM',   'division': '1'},
-    16: {'name': 'PLATINUM',   'division': '2'},
-    17: {'name': 'PLATINUM',   'division': '3'},
-    18: {'name': 'DIAMOND',    'division': '1'},
-    19: {'name': 'DIAMOND',    'division': '2'},
-    20: {'name': 'DIAMOND',    'division': '3'},
-    21: {'name': 'ASCENDANT',  'division': '1'},
-    22: {'name': 'ASCENDANT',  'division': '2'},
-    23: {'name': 'ASCENDANT',  'division': '3'},
-    24: {'name': 'IMMORTAL',   'division': '1'},
-    25: {'name': 'IMMORTAL',   'division': '2'},
-    26: {'name': 'IMMORTAL',   'division': '3'},
-    27: {'name': 'RADIANT',    'division': ''},
+
 }
 
 VAL_QUEUE_MAP = {
@@ -201,7 +173,7 @@ VAL_QUEUE_MAP = {
 }
 
 VAL_MAP_MAP = {
-,
+
 }
 
 VAL_AGENT_MAP = {
