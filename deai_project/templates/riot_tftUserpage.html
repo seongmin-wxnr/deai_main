@@ -64,7 +64,7 @@ body::after {
   position:fixed; top:0; left:0; right:0; height:56px; z-index:1000;
   background:rgba(7,6,14,.92); backdrop-filter:blur(12px);
   border-bottom:1px solid var(--border);
-  display:flex; align-items:center; gap:12px; padding:0 20px;
+  display:flex; align-items:center; padding:0 20px;
 }
 .nav-logo {
   font-family:var(--font-ui); font-size:18px; font-weight:700;
@@ -274,7 +274,8 @@ body::after {
 /* ─── 반응형: 태블릿 ─── */
 @media (max-width: 800px) {
   .page-wrapper  { padding:64px 8px 24px; }
-  .nav           { padding:0 10px; gap:8px; height:52px; }
+  .nav           { padding:0 10px; height:52px; }
+  .nav-search-center { max-width:340px; }
   .userpage-wrap { flex-direction:column; }
   .sidebar       { width:100%; }
 
@@ -329,12 +330,15 @@ body::after {
 </head>
 <body>
 <nav class="nav">
+  <!-- 좌측: 로고 -->
   <a class="nav-logo" href="/Deai_main/" style="flex-shrink:0;">
     <span class="nav-logo-text">DEAI</span>
     <span class="nav-logo-sep">×</span>
     <span class="nav-logo-sub">TFT</span>
   </a>
-  <div style="display:flex;align-items:center;flex:1;max-width:440px;margin:0 28px;">
+
+  <!-- 중앙: 검색창 (absolute 센터링) -->
+  <div class="nav-search-center" style="position:absolute;left:50%;transform:translateX(-50%);display:flex;align-items:center;width:100%;max-width:480px;padding:0 8px;box-sizing:border-box;">
     <div id="nav-search-box"
          style="display:flex;align-items:center;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:6px 0 0 6px;flex:1;overflow:hidden;transition:border-color 0.2s;"
          onfocusin="this.style.borderColor='var(--gold)'"
@@ -344,7 +348,7 @@ body::after {
              onkeydown="if(event.key==='Enter')navSearch()"/>
       <span style="color:var(--text-muted);font-size:14px;padding:0 2px;flex-shrink:0;">#</span>
       <input id="nav-tag-input" type="text" placeholder="KR1" maxlength="8" autocomplete="off" spellcheck="false"
-             style="background:none;border:none;outline:none;padding:8px 8px;font-family:var(--font-ui);font-size:13px;color:var(--text-bright);width:68px;flex-shrink:0;"
+             style="background:none;border:none;outline:none;padding:8px 8px;font-family:var(--font-ui);font-size:13px;color:var(--text-bright);width:60px;flex-shrink:0;"
              onkeydown="if(event.key==='Enter')navSearch()"/>
     </div>
     <select id="nav-region-select"
@@ -365,9 +369,12 @@ body::after {
     </button>
   </div>
 
-  <button class="nav-back" onclick="navigateTo('/RiotSearch/')" style="flex-shrink:0;">
-    검색으로
-  </button>
+  <!-- 우측: 검색으로 버튼 -->
+  <div style="margin-left:auto;flex-shrink:0;">
+    <button class="nav-back" onclick="navigateTo('/RiotSearch/')">
+      검색으로
+    </button>
+  </div>
 </nav>
 <div class="page-wrapper">
   <div class="userpage-wrap">
@@ -1015,7 +1022,7 @@ const TFT_TRAIT_KO = {
   'TFT16_Slayer':        '학살자',
   // 고유 특성
 
-  // fucking shiabfiusegi --> except
+  // fucking --> except
   'TFT16_AatroxUnique' : '세계의 종결자',
   'TFT16_SylasTrait' : '사슬 파괴자',
   'TFT16_DarkinWeapon' : '다르킨',
