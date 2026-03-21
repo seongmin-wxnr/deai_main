@@ -108,6 +108,7 @@ urlpatterns = [
 
     path('api/info/tft/champions/',       riot_info.info_tft_champions,  name='info_tft_champs'),
     path('api/info/tft/items/',           riot_info.info_tft_items,      name='info_tft_items'),
+    path('api/info/tft/augments/', riot_info.info_tft_augments),
 
     ## riot api 
     ## riot ranking s
