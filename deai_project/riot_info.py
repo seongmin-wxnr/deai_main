@@ -12,12 +12,8 @@ from django.conf import settings
 from django.core.cache import cache
 
 DDRAGON_BASE = 'https://ddragon.leagueoflegends.com'
-CACHE_TTL    = 60 * 60 * 6   # Django cache TTL (6시간, 초 단위)
-DB_TTL_HOURS = 6              # RiotDataCache TTL (6시간)
-
-# ──────────────────────────────────────────────
-#  캐시 헬퍼: 메모리 → Django cache → DB 순서로 읽기/쓰기
-# ──────────────────────────────────────────────
+CACHE_TTL    = 60 * 60 * 6  
+DB_TTL_HOURS = 6           
 
 _MEM_CACHE: dict = {}   # 프로세스 내 메모리 캐시
 
@@ -65,14 +61,6 @@ def _cached_delete(key: str):
     _MEM_CACHE.pop(key, None)
     cache.delete(key)
     _db_delete(key)
-
-
-# ──────────────────────────────────────────────
-#  DB 테이블 직접 캐시 헬퍼
-#  - 각 game info 전용 테이블(LOL_infoChampionTable 등)을 우선 조회하고,
-#    없으면 외부 API → 테이블 upsert → 응답 반환
-# ──────────────────────────────────────────────
-
 def _table_champions_lol(lang: str, ver: str, ddragon_data: dict) -> list:
     """DDragon 챔피언 dict → LOL_infoChampionTable upsert 후 행 목록 반환."""
     from .models import LOL_infoChampionTable
@@ -374,11 +362,6 @@ def _table_items_tft(cd_data: dict) -> list:
     items_out.sort(key=lambda x: (type_order.get(x['type'], 9), x['name']))
     return items_out
 
-
-# ──────────────────────────────────────────────
-#  공통 유틸
-# ──────────────────────────────────────────────
-
 def _tc_img(path: str) -> str:
     """CDragon asset 경로 → 이미지 URL 변환"""
     if not path:
@@ -469,11 +452,6 @@ def _dd_version() -> str:
     _cached_set('ddragon_version', ver)
     return ver
 
-
-# ──────────────────────────────────────────────
-#  LoL 아이템 분류 상수 및 헬퍼
-# ──────────────────────────────────────────────
-
 TAG_TO_CLASS = {
     'Fighter' : '브루저',
     'Tank'    : '탱커',
@@ -543,11 +521,6 @@ def _item_type(item: dict, item_id: int = 0):
         return 'entry'
     return None
 
-
-# ──────────────────────────────────────────────
-#  Views
-# ──────────────────────────────────────────────
-
 def infoPageRender(request):
     if request.method != 'GET':
         return JsonResponse({'success': False, 'message': '잘못된 메서드입니다.'}, status=405)
@@ -598,12 +571,6 @@ def info_cache_clear(request):
         return JsonResponse({'success': True, 'cleared': cleared, 'count': len(cleared)})
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=500)
-
-
-# ──────────────────────────────────────────────
-#  LoL 챔피언
-# ──────────────────────────────────────────────
-
 def info_lol_champions(request):
     """
     DB 우선 조회 전략:
@@ -614,12 +581,9 @@ def info_lol_champions(request):
     lang      = request.GET.get('lang', 'ko_KR')
     cache_key = f'info_lol_champs_{lang}'
 
-    # 1. 메모리/Django cache/RiotDataCache(blob) 확인
     cached = _cached_get(cache_key)
     if cached:
         return JsonResponse(cached)
-
-    # 2. 전용 DB 테이블 확인
     try:
         from .models import LOL_infoChampionTable
         qs = LOL_infoChampionTable.objects.all()
@@ -631,8 +595,6 @@ def info_lol_champions(request):
             return JsonResponse(result)
     except Exception as e:
         print(f'[INFO LOL CHAMPS] DB 조회 오류: {e}')
-
-    # 3. 외부 API → DB 테이블 upsert
     try:
         ver  = _dd_version()
         data = _get(f'{DDRAGON_BASE}/cdn/{ver}/data/{lang}/champion.json')
@@ -643,11 +605,6 @@ def info_lol_champions(request):
     except Exception as e:
         print(f'[INFO LOL CHAMPS] {e}')
         return JsonResponse({'success': False, 'message': str(e)}, status=500)
-
-
-# ──────────────────────────────────────────────
-#  LoL 아이템
-# ──────────────────────────────────────────────
 
 def info_lol_items(request):
     """
@@ -663,12 +620,9 @@ def info_lol_items(request):
     mapping_hash = hashlib.md5(mapping_sig.encode()).hexdigest()[:8]
     cache_key    = f'info_lol_items_{lang}_{mapping_hash}'
 
-    # 1. 메모리/Django cache/RiotDataCache(blob) 확인
     cached = _cached_get(cache_key)
     if cached:
         return JsonResponse(cached)
-
-    # 2. 전용 DB 테이블 확인 (mapping_hash 일치 여부 검증)
     try:
         from .models import LOL_infoItemTable
         qs = LOL_infoItemTable.objects.filter(mapping_hash=mapping_hash)
@@ -684,8 +638,6 @@ def info_lol_items(request):
             return JsonResponse(result)
     except Exception as e:
         print(f'[INFO LOL ITEMS] DB 조회 오류: {e}')
-
-    # 3. 외부 API → DB 테이블 upsert
     try:
         ver   = _dd_version()
         data  = _get(f'{DDRAGON_BASE}/cdn/{ver}/data/{lang}/item.json')
@@ -697,17 +649,7 @@ def info_lol_items(request):
         print(f'[INFO LOL ITEMS] {e}')
         return JsonResponse({'success': False, 'message': str(e)}, status=500)
 
-
-# ──────────────────────────────────────────────
-#  TFT 챔피언
-# ──────────────────────────────────────────────
-
 def info_tft_champions(request):
-    """
-    DB 우선 조회 전략:
-    1. TFT_infoChampionTable 에 데이터 존재 → DB 직접 반환
-    2. 없으면 CDragon API → 테이블 upsert → 반환
-    """
     lang      = request.GET.get('lang', 'ko_KR')
     cache_key = f'info_tft_champs_{lang}'
 
@@ -744,17 +686,7 @@ def info_tft_champions(request):
         print(f'[INFO TFT CHAMPS] {e}')
         return JsonResponse({'success': False, 'message': str(e)}, status=500)
 
-
-# ──────────────────────────────────────────────
-#  TFT 아이템
-# ──────────────────────────────────────────────
-
 def info_tft_items(request):
-    """
-    DB 우선 조회 전략:
-    1. TFT_infoItemTable 에 데이터 존재 → DB 직접 반환
-    2. 없으면 CDragon API → 테이블 upsert → 반환
-    """
     lang      = request.GET.get('lang', 'ko_KR')
     cache_key = f'info_tft_items_{lang}'
 
@@ -791,12 +723,6 @@ def info_tft_items(request):
     except Exception as e:
         print(f'[INFO TFT ITEMS] {e}')
         return JsonResponse({'success': False, 'message': str(e)}, status=500)
-
-
-# ──────────────────────────────────────────────
-#  TFT 오그먼트 (RiotDataCache blob 방식 유지 — 행 단위 테이블 불필요)
-# ──────────────────────────────────────────────
-
 def info_tft_augments(request):
     lang      = request.GET.get('lang', 'ko_KR')
     cache_key = f'info_tft_augments_{lang}'
